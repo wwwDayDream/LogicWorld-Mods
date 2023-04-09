@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "im64DKT4re2KgxacYoFQx1I77hzHdZOx9v17j4WGiLMPcFvLnwB2NpHdvxIISgC5VgYji4sq153ueIRrNL7XVQ==",
+  "success": true,
+  "projectFilePath": "C:\\SteamLibrary\\steamapps\\common\\Logic World\\GameData\\AbstractChipz\\ChipzShared\\ChipzShared.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\daymo\\.nuget\\packages\\microsoft.netcore.platforms\\1.1.0\\microsoft.netcore.platforms.1.1.0.nupkg.sha512",
+    "C:\\Users\\daymo\\.nuget\\packages\\netstandard.library\\2.0.3\\netstandard.library.2.0.3.nupkg.sha512"
+  ],
+  "logs": []
+}

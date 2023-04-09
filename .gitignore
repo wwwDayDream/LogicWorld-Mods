@@ -1,0 +1,8 @@
+AbstractChipz/ChipzClient/bin/
+AbstractChipz/ChipzServer/bin/
+AbstractChipz/ChipzShared/bin/
+MHG/
+ScriptableChip/ScriptableChipClient/bin/
+ScriptableChip/ScriptableChipServer/bin/
+ScriptableChip/ScriptableChipShared/bin/
+/**/**/*.dll

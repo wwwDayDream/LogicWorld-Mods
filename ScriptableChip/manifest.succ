@@ -1,0 +1,7 @@
+ID: sCHZ
+Name: SciptableChipz
+Author: Nicholas Scott
+Version: 1.2
+Priority: 40
+Dependencies: 
+    - CHZ

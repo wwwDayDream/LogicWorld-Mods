@@ -1,0 +1,17 @@
+#####################
+# COMPONENT COLUMNS #
+#####################
+
+
+
+########################
+# COMPONENT CATEGORIES #
+########################
+
+ComponentCategory.Chips         : "Chips"
+
+##############
+# COMPONENTS #
+##############
+
+sCHZ.ScriptableChip              : "Scriptable Chip"

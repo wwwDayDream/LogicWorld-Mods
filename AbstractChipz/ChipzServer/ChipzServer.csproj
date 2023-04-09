@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\src\server\**\*.cs" Link="src\server\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ChipzShared\ChipzShared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="LogicAPI">
+      <HintPath>..\..\..\Server\LogicAPI.dll</HintPath>
+    </Reference>
+    <Reference Include="LogicAPI.Server">
+      <HintPath>..\..\..\Server\LogicAPI.Server.dll</HintPath>
+    </Reference>
+    <Reference Include="LogicLog">
+      <HintPath>..\..\..\Server\LogicLog.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>

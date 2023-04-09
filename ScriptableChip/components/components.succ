@@ -1,0 +1,7 @@
+ScriptableChip:
+    column: Logic
+    category: Chips
+    prefab: dynamic
+    clientCode: ScriptableChip.Client.ComponentCode.ScriptableChip
+    logicCode: ScriptableChip.Server.ComponentCode.ScriptableChip
+    placingRules: dynamic

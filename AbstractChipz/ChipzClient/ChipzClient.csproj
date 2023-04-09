@@ -1,0 +1,92 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{73903F63-5EC8-476D-9B1E-21B716B86801}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>ChipzClient</RootNamespace>
+    <AssemblyName>ChipzClient</AssemblyName>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="JimmysUnityUtilities">
+      <HintPath>..\..\..\Logic_World_Data\Managed\JimmysUnityUtilities.dll</HintPath>
+    </Reference>
+    <Reference Include="LogicAPI">
+      <HintPath>..\..\..\Logic_World_Data\Managed\LogicAPI.dll</HintPath>
+    </Reference>
+    <Reference Include="LogicAPI.Client">
+      <HintPath>..\..\..\Logic_World_Data\Managed\LogicAPI.Client.dll</HintPath>
+    </Reference>
+    <Reference Include="LogicLog">
+      <HintPath>..\..\..\Logic_World_Data\Managed\LogicLog.dll</HintPath>
+    </Reference>
+    <Reference Include="LogicWorld.Building">
+      <HintPath>..\..\..\Logic_World_Data\Managed\LogicWorld.Building.dll</HintPath>
+    </Reference>
+    <Reference Include="LogicWorld.BuildingManagement">
+      <HintPath>..\..\..\Logic_World_Data\Managed\LogicWorld.BuildingManagement.dll</HintPath>
+    </Reference>
+    <Reference Include="LogicWorld.ClientCode">
+      <HintPath>..\..\..\Logic_World_Data\Managed\LogicWorld.ClientCode.dll</HintPath>
+    </Reference>
+    <Reference Include="LogicWorld.Interfaces">
+      <HintPath>..\..\..\Logic_World_Data\Managed\LogicWorld.Interfaces.dll</HintPath>
+    </Reference>
+    <Reference Include="LogicWorld.References">
+      <HintPath>..\..\..\Logic_World_Data\Managed\LogicWorld.References.dll</HintPath>
+    </Reference>
+    <Reference Include="LogicWorld.Rendering">
+      <HintPath>..\..\..\Logic_World_Data\Managed\LogicWorld.Rendering.dll</HintPath>
+    </Reference>
+    <Reference Include="LogicWorld.SharedCode">
+      <HintPath>..\..\..\Logic_World_Data\Managed\LogicWorld.SharedCode.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>..\..\..\Logic_World_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\src\client\**\*.cs" Link="src\client\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ChipzShared\ChipzShared.csproj">
+      <Project>{d5140625-5635-425f-adb0-f1ffc80ef2be}</Project>
+      <Name>ChipzShared</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
