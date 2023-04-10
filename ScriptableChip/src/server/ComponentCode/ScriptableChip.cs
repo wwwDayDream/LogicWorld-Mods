@@ -46,7 +46,6 @@ namespace ScriptableChip.Server.ComponentCode
         {
             if (oldScript == Data.CurrentScript)
             {
-                LConsole.WriteLine("UpdateScript: oldScript is the same as Data.CurrentScript - returning early.");
                 return;
             }
 
@@ -77,13 +76,9 @@ namespace ScriptableChip.Server.ComponentCode
                 CompiledScript = result.Script;
             }
 
-            LConsole.WriteLine("UpdateScript: Updating oldScript.");
             oldScript = Data.CurrentScript;
-
-            LConsole.WriteLine("UpdateScript: Setting hasRunStartup to false.");
             hasRunStartup = false;
 
-            LConsole.WriteLine("UpdateScript: Queuing logic update.");
             QueueLogicUpdate();
         }
 
@@ -137,7 +132,6 @@ namespace ScriptableChip.Server.ComponentCode
         protected override void OnCustomDataUpdated()
         {
             if (Data.CurrentScript == null) return;
-            Logger.Info("Custom Script Received: " + Data.CurrentScript);
             UpdateScript();
         }
     }

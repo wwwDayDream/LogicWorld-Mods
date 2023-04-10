@@ -1,0 +1,2 @@
+C:\SteamLibrary\steamapps\common\Logic World\GameData\ScriptableChip\ScriptableChipClient\obj\Debug\Client.csproj.AssemblyReference.cache
+C:\SteamLibrary\steamapps\common\Logic World\GameData\ScriptableChip\ScriptableChipClient\obj\Debug\Client.csproj.CoreCompileInputs.cache

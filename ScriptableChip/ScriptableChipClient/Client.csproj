@@ -49,6 +49,9 @@
     <Reference Include="LogicWorld.Building">
       <HintPath>..\..\..\Logic_World_Data\Managed\LogicWorld.Building.dll</HintPath>
     </Reference>
+    <Reference Include="LogicWorld.ClientCode">
+      <HintPath>..\..\..\Logic_World_Data\Managed\LogicWorld.ClientCode.dll</HintPath>
+    </Reference>
     <Reference Include="LogicWorld.GameStates">
       <HintPath>..\..\..\Logic_World_Data\Managed\LogicWorld.GameStates.dll</HintPath>
     </Reference>

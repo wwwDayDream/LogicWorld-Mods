@@ -45,7 +45,7 @@ namespace Chipz.ComponentCode
         protected override void DataUpdate()
         {
             // This is where we need to update the size of our main block.
-            SetBlockScale(0, new Vector3((float)SizeX + (Resizing ? 1 : 0), 1, (float)SizeZ + (Resizing ? 1 : 0)));
+            SetBlockScale(0, new Vector3(SizeX + (Resizing ? 1 : 0), 1, SizeZ + (Resizing ? 1 : 0)));
             SetBlockPosition(0, new Vector3((float)SizeX / 2 - 0.5f, 0, (float)SizeZ / 2 - 0.5f));
         }
         public void OnResizingBegin()
@@ -54,7 +54,7 @@ namespace Chipz.ComponentCode
 
             ResizingColorOld = GetBlockEntity(0).Color;
             SetBlockColor(ResizingColor.ToGpuColor(), 0);
-            SetBlockScale(0, new Vector3((float)SizeX + (Resizing ? 1 : 0), 1, (float)SizeZ + (Resizing ? 1 : 0)));
+            SetBlockScale(0, new Vector3(SizeX + (Resizing ? 1 : 0), 1, SizeZ + (Resizing ? 1 : 0)));
         }
         public void OnResizingEnd()
         {

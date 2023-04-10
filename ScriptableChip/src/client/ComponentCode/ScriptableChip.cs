@@ -11,6 +11,11 @@ using ScriptableChip.CustomData;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using LogicWorld.UI.MainMenu;
+using System.Runtime.InteropServices;
+using LogicAPI.Data;
+using LogicWorld.ClientCode;
+using System.Threading;
 
 namespace ScriptableChip.Client.ComponentCode
 {
@@ -24,7 +29,44 @@ namespace ScriptableChip.Client.ComponentCode
         public override ColoredString ChipTitle => chipTitle;
         #endregion
 
-        private ColoredString chipTitle = new ColoredString() { Color = Color24.White, Text = "ScriptableChip" };
+        private ColoredString chipTitle = new ColoredString() { Color = Color24.White, Text = "ScriptableChip" }; 
+        private static (string FirstLine, string LeftOver) RemoveFirstLine(string value)
+        {
+            var lines = value.Split(new string[] { "\n", "\r" }).ToList();
+            var firstLine = lines[0];
+            lines.RemoveAt(0);
+            return (firstLine, string.Join("\n", lines));
+        }
+        private static (bool Success, string Script, Label Tracker) SearchForContentByLabel(string query, IComponentClientCode searchParent)
+        {
+            var world = Instances.MainWorld;
+            IEnumerable<Label> RecursiveLabelSearch(IEnumerable<IComponentClientCode> search)
+            {
+                List<IComponentClientCode> BoardsToSearch = new List<IComponentClientCode>();
+                foreach (var searchBase in search)
+                {
+                    foreach (var child in searchBase.Component.EnumerateChildren())
+                    {
+                        var childCode = world.Renderer.Entities.GetClientCode(child);
+                        if (childCode.Component.ChildCount > 0)
+                            BoardsToSearch.Add(childCode);
+                        if (childCode is Label label)
+                            yield return label;
+                    }
+                }
+                RecursiveLabelSearch(BoardsToSearch);
+            }
+
+            foreach (Label label in RecursiveLabelSearch(new IComponentClientCode[] {searchParent, world.Renderer.Entities.GetClientCode(searchParent.Component.Parent) }))
+            {
+                var result = RemoveFirstLine(label.Data.LabelText);
+                if (result.FirstLine.ToLower().StartsWith("[" + query.ToLower() + "]"))
+                {
+                    return (true, result.LeftOver, label);
+                }
+            }
+            return (false, "", null);
+        }
         // Thanks to Ecconia for this method
         // https://github.com/Ecconia/Ecconia-LogicWorld-Mods/blob/master/EcconiasChaosClientMod/EcconiasChaosClientMod/src/client/ThisIsBlack.cs#L131
         private static ComponentSelection extractMultiSelectedObjects()
@@ -81,7 +123,7 @@ namespace ScriptableChip.Client.ComponentCode
                 }
             }
         }
-        [Command("sCHZ.CopyScript", Description = "Copies the script from the selected chip.")]
+        [Command("sCHZ.GetScripts", Description = "Prints the script(s) from the selected chip.")]
         public static void CopyScript()
         {
             var world = Instances.MainWorld;
@@ -99,9 +141,11 @@ namespace ScriptableChip.Client.ComponentCode
                     return; //Whoops, could not get selection, stop execution.
                 }
 
-                IComponentClientCode codeOfFirst = world.Renderer.Entities.GetClientCode(selection.ComponentsInSelection.ToArray()[0]);
-                if (codeOfFirst != null && codeOfFirst is ScriptableChip)
-                    GUIUtility.systemCopyBuffer = ((ScriptableChip)codeOfFirst).Data.CurrentScript;
+                foreach (var addy in selection)
+                {
+                    var code = world.Renderer.Entities.GetClientCode(addy);
+                    LConsole.WriteLine(((ScriptableChip)code).Data.CurrentScript);
+                }
             }
         }
 
@@ -121,9 +165,37 @@ namespace ScriptableChip.Client.ComponentCode
                 Text = i.ToString() + Superscript("OUT")
             };
         }
+
+        internal Label ourScript = null;
+        internal string lastScriptAttempt = "";
+        internal Timer updateInterval;
+        protected override void Initialize()
+        {
+            base.Initialize();
+            updateInterval = new Timer(Update, this, 0, 500);
+        }
+        protected static void Update(object state)
+        {
+            var us = (ScriptableChip)state;
+            if (!us.PlacedInMainWorld)
+                return;
+
+            var Result = SearchForContentByLabel("script", us);
+            if (Result.Success)
+            {
+                if (Result.Script != us.lastScriptAttempt)
+                {
+                    LConsole.WriteLine("FrameUpdate: Sending script to server...");
+                    us.lastScriptAttempt = Result.Script;
+                    us.SendScriptToServer(Result.Script);
+                }
+            }
+        }
+
         protected override void DataUpdate()
         {
             base.DataUpdate();
+            if (Data.CurrentScript == null) return;
             var result = ExtractTitleFromLogicScript(Data.CurrentScript);
             if (result.success)
                 ChangeScriptTitle(result.title);
@@ -135,7 +207,6 @@ namespace ScriptableChip.Client.ComponentCode
         }
         private void SendScriptToServer(string newScript)
         {
-            LConsole.WriteLine("Uploading new script w/ length of " + newScript.Length + " to component @ address " + Address);
             var result = ExtractTitleFromLogicScript(newScript);
             Data.CurrentScript = newScript;
             if (result.success)
