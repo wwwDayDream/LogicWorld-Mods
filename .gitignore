@@ -1,10 +1,4 @@
-AbstractChipz/ChipzClient/
-AbstractChipz/ChipzServer/
-AbstractChipz/.vs/
-
 MHG/
-ScriptableChip/ScriptableChipClient/
-ScriptableChip/ScriptableChipServer/
-ScriptableChip/.vs/
 /**/**/*.dll
 /**/**/*.sln
+/**/.vs/
