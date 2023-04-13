@@ -4,7 +4,7 @@ using LogicWorld.SharedCode.BinaryStuff;
 using System;
 using System.Reflection;
 
-namespace Chipz.ComponentCode
+namespace Chipz.Server.ComponentCode
 {
     public abstract class NetworkedDynamicChip : LogicComponent
     {

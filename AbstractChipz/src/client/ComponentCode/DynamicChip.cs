@@ -11,12 +11,11 @@ using LogicWorld.Rendering.Components;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
-using static LogicWorld.Building.WorldOutliner;
 
-namespace Chipz.ComponentCode
+namespace Chipz.Client.ComponentCode
 {
     /// <summary>
-    /// Abstract class representing a dynamic chip in the game with client code, inherits from ComponentClientCode and implements IComponentClientCode interface.
+    /// Abstract class representing a dynamic chip in the game with Client code, inherits from ComponentClientCode and implements IComponentClientCode interface.
     /// </summary>
     public abstract class DynamicChip : ComponentClientCode, IComponentClientCode
     {

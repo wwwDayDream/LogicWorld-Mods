@@ -1,4 +1,4 @@
-﻿using Chipz.ComponentCode;
+﻿using Chipz.Client.ComponentCode;
 using JimmysUnityUtilities;
 using LICC;
 using LogicAPI.Data;
@@ -45,7 +45,7 @@ namespace ScriptableChip.Client.ComponentCode
         #endregion
 
         // Thanks to Ecconia for this method
-        // https://github.com/Ecconia/Ecconia-LogicWorld-Mods/blob/master/EcconiasChaosClientMod/EcconiasChaosClientMod/src/client/ThisIsBlack.cs#L131
+        // https://github.com/Ecconia/Ecconia-LogicWorld-Mods/blob/master/EcconiasChaosClientMod/EcconiasChaosClientMod/src/Client/ThisIsBlack.cs#L131
         private static ComponentSelection extractMultiSelectedObjects()
         {
             FieldInfo field = typeof(MultiSelector).GetField("CurrentSelection", BindingFlags.NonPublic | BindingFlags.Static);
@@ -72,7 +72,8 @@ namespace ScriptableChip.Client.ComponentCode
             }
             return selection;
         }
-        [Command("sCHZ.UpdateScript", Description = "Updates the selected chip(s) scripts' to the contents of the clipboard.")]
+        #region Commands
+        [Command("sCHZ.UpdateScript", Description = "Updates the selected chip(s) scripts' from the contents of the clipboard.")]
         public static void UpdateScript()
         {
             IClientWorld world = Instances.MainWorld;
@@ -195,7 +196,7 @@ namespace ScriptableChip.Client.ComponentCode
                 });
             }
         }
-        [Command("sCHZ.ClearLinkedLabel", Description = "Clears the linekd label(s) from the selected chip(s).")]
+        [Command("sCHZ.ClearLinkedLabel", Description = "Clears the linked label(s) from the selected chip(s).")]
         public static void ClearLabel()
         {
             IClientWorld world = Instances.MainWorld;
@@ -277,6 +278,7 @@ namespace ScriptableChip.Client.ComponentCode
                 });
             }
         }
+        #endregion
 
         public override ColoredString GetInputPinLabel(int i)
         {
@@ -296,6 +298,7 @@ namespace ScriptableChip.Client.ComponentCode
         }
 
         #region Data Management
+        internal string lastParsedScript = string.Empty;
         protected override void DataUpdate()
         {
             base.DataUpdate();
@@ -303,6 +306,23 @@ namespace ScriptableChip.Client.ComponentCode
             {
                 LConsole.WriteLine(pendingScriptErrors);
                 PendingSciptErrors = string.Empty;
+            }
+            if (lastParsedScript != currentScript)
+            {
+                lastParsedScript = currentScript;
+                string title = string.Empty;
+                lastParsedScript.Split(new string[] { "\r", "\n" }).Where(line => line.Replace(" ", "").StartsWith("//")).ForEach(commentLine =>
+                {
+                    if (commentLine.Replace(" ", "").ToLower().StartsWith("//[name]"))
+                    {
+                        title = commentLine.Substring(commentLine.ToLower().IndexOf("[name]") + ("[name]").Length).Trim();
+                    }
+                });
+                if (title != string.Empty)
+                {
+                    chipTitle.Text = title;
+                    this.QueueChipTitleUpdate();
+                }
             }
         }
         public override void DeserializeNetworkedData(ref MemoryByteReader Reader)
@@ -326,7 +346,7 @@ namespace ScriptableChip.Client.ComponentCode
         {
             base.SerializeNetworkedData(ref Writer);
 
-            Writer.Write(currentScript);
+            Writer.Write(string.Empty);
             Writer.Write(pendingScript);
             Writer.Write(pendingScriptErrors);
             Writer.Write(linkedLabel);

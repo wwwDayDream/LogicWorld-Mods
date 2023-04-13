@@ -2,7 +2,7 @@
 using LogicWorld.References;
 using LogicWorld.Rendering.Dynamics;
 
-namespace Chipz.client
+namespace Chipz.Client
 {
     public class ClientLoader : ClientMod
     {
