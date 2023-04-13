@@ -1,6 +1,7 @@
-﻿using Chipz.ComponentCode;
+﻿using Chipz.Server.ComponentCode;
 using LICC;
 using LogicAPI.Data;
+using LogicAPI.Server.Components;
 using LogicScript;
 using LogicScript.Data;
 using LogicScript.Parsing;

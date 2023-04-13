@@ -15,9 +15,8 @@ using System.Linq;
 using System.Security.Policy;
 using System.Text;
 using UnityEngine;
-using static LogicWorld.Building.WorldOutliner;
 
-namespace Chipz.ComponentCode
+namespace Chipz.Client.ComponentCode
 {
     public abstract class NetworkedDynamicChip : DynamicChip
     {

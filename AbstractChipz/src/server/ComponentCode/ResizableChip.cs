@@ -5,7 +5,7 @@ using System;
 using System.Reflection;
 using UnityEngine;
 
-namespace Chipz.ComponentCode
+namespace Chipz.Server.ComponentCode
 {
     public abstract class ResizableChip : NetworkedDynamicChip
     {

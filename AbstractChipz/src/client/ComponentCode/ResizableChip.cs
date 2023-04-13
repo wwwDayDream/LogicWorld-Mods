@@ -7,7 +7,7 @@ using LogicWorld.SharedCode.BinaryStuff;
 using System;
 using UnityEngine;
 
-namespace Chipz.ComponentCode
+namespace Chipz.Client.ComponentCode
 {
 
     public abstract class ResizableChip : NetworkedDynamicChip, IResizableX, IResizableZ, IResizableCallbackReciever

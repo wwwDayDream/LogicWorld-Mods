@@ -1,4 +1,4 @@
-﻿using Chipz.ComponentCode;
+﻿using Chipz.Client.ComponentCode;
 using JimmysUnityUtilities;
 using LICC;
 using LogicAPI.Data;
@@ -45,7 +45,7 @@ namespace ScriptableChip.Client.ComponentCode
         #endregion
 
         // Thanks to Ecconia for this method
-        // https://github.com/Ecconia/Ecconia-LogicWorld-Mods/blob/master/EcconiasChaosClientMod/EcconiasChaosClientMod/src/client/ThisIsBlack.cs#L131
+        // https://github.com/Ecconia/Ecconia-LogicWorld-Mods/blob/master/EcconiasChaosClientMod/EcconiasChaosClientMod/src/Client/ThisIsBlack.cs#L131
         private static ComponentSelection extractMultiSelectedObjects()
         {
             FieldInfo field = typeof(MultiSelector).GetField("CurrentSelection", BindingFlags.NonPublic | BindingFlags.Static);
@@ -72,7 +72,7 @@ namespace ScriptableChip.Client.ComponentCode
             }
             return selection;
         }
-        [Command("sCHZ.UpdateScript", Description = "Updates the selected chip(s) scripts' to the contents of the clipboard.")]
+        [Command("sCHZ.UpdateScript", Description = "Updates the selected chip(s) scripts' from the contents of the clipboard.")]
         public static void UpdateScript()
         {
             IClientWorld world = Instances.MainWorld;
@@ -195,7 +195,7 @@ namespace ScriptableChip.Client.ComponentCode
                 });
             }
         }
-        [Command("sCHZ.ClearLinkedLabel", Description = "Clears the linekd label(s) from the selected chip(s).")]
+        [Command("sCHZ.ClearLinkedLabel", Description = "Clears the linked label(s) from the selected chip(s).")]
         public static void ClearLabel()
         {
             IClientWorld world = Instances.MainWorld;
