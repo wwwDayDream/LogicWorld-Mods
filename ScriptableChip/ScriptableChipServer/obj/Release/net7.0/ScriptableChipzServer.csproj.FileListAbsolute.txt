@@ -1,5 +1,0 @@
-C:\SteamLibrary\steamapps\common\Logic World\GameData\ChipzLib\ScriptableChipzServer\obj\Release\net7.0\ScriptableChipzServer.csproj.AssemblyReference.cache
-C:\SteamLibrary\steamapps\common\Logic World\GameData\ChipzLib\ScriptableChipzServer\obj\Release\net7.0\ScriptableChipzServer.GeneratedMSBuildEditorConfig.editorconfig
-C:\SteamLibrary\steamapps\common\Logic World\GameData\ChipzLib\ScriptableChipzServer\obj\Release\net7.0\ScriptableChipzServer.AssemblyInfoInputs.cache
-C:\SteamLibrary\steamapps\common\Logic World\GameData\ChipzLib\ScriptableChipzServer\obj\Release\net7.0\ScriptableChipzServer.AssemblyInfo.cs
-C:\SteamLibrary\steamapps\common\Logic World\GameData\ChipzLib\ScriptableChipzServer\obj\Release\net7.0\ScriptableChipzServer.csproj.CoreCompileInputs.cache
