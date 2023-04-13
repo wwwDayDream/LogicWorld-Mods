@@ -1,25 +1,26 @@
-﻿using JimmysUnityUtilities;
+﻿using Chipz.ComponentCode;
+using JimmysUnityUtilities;
 using LICC;
+using LogicAPI.Data;
 using LogicWorld.Building.Overhaul;
+using LogicWorld.ClientCode;
 using LogicWorld.GameStates;
 using LogicWorld.Interfaces;
+using LogicWorld.SharedCode.BinaryStuff;
 using LogicWorld.UI;
-using System.Reflection;
-using UnityEngine;
-using Chipz.ComponentCode;
-using ScriptableChip.CustomData;
+using LogicWorld.UI.MainMenu;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using LogicWorld.UI.MainMenu;
+using System.Reflection;
 using System.Runtime.InteropServices;
-using LogicAPI.Data;
-using LogicWorld.ClientCode;
+using System.Security.Policy;
 using System.Threading;
+using UnityEngine;
 
 namespace ScriptableChip.Client.ComponentCode
 {
-    public class ScriptableChip : ResizableChip<ScriptableChipCustomData>
+    public class ScriptableChip : ResizableChip
     {
         #region Public Variables
         public override int MinX => 1;
@@ -27,57 +28,33 @@ namespace ScriptableChip.Client.ComponentCode
         public override int MinZ => 1;
         public override int MaxZ => 32;
         public override ColoredString ChipTitle => chipTitle;
+        public override Vector2Int DefaultSize => new Vector2Int(4, 4);
+        public string CurrentScript { get => currentScript; set { currentScript = value; QueueNetworkedDataUpdate(); } }
+        public string PendingScipt { get => pendingScript; set { pendingScript = value; QueueNetworkedDataUpdate(); } }
+        public string PendingSciptErrors { get => pendingScriptErrors; set { pendingScriptErrors = value; QueueNetworkedDataUpdate(); } }
+        public ComponentAddress LinkedLabel { get => linkedLabel; set { linkedLabel = value; QueueNetworkedDataUpdate(); } }
+        #endregion
+        #region Private Variables 
+        private ColoredString chipTitle = new ColoredString() { Color = Color24.White, Text = "ScriptableChip" };
+        private string currentScript = string.Empty;
+        private string pendingScript = string.Empty;
+        private string lastSentScript = string.Empty;
+        private string pendingScriptErrors = string.Empty;
+        private ComponentAddress linkedLabel = ComponentAddress.Null;
+        private ulong[] registers = Array.Empty<ulong>();
         #endregion
 
-        private ColoredString chipTitle = new ColoredString() { Color = Color24.White, Text = "ScriptableChip" }; 
-        private static (string FirstLine, string LeftOver) RemoveFirstLine(string value)
-        {
-            var lines = value.Split(new string[] { "\n", "\r" }).ToList();
-            var firstLine = lines[0];
-            lines.RemoveAt(0);
-            return (firstLine, string.Join("\n", lines));
-        }
-        private static (bool Success, string Script, Label Tracker) SearchForContentByLabel(string query, IComponentClientCode searchParent)
-        {
-            var world = Instances.MainWorld;
-            IEnumerable<Label> RecursiveLabelSearch(IEnumerable<IComponentClientCode> search)
-            {
-                List<IComponentClientCode> BoardsToSearch = new List<IComponentClientCode>();
-                foreach (var searchBase in search)
-                {
-                    foreach (var child in searchBase.Component.EnumerateChildren())
-                    {
-                        var childCode = world.Renderer.Entities.GetClientCode(child);
-                        if (childCode.Component.ChildCount > 0)
-                            BoardsToSearch.Add(childCode);
-                        if (childCode is Label label)
-                            yield return label;
-                    }
-                }
-                RecursiveLabelSearch(BoardsToSearch);
-            }
-
-            foreach (Label label in RecursiveLabelSearch(new IComponentClientCode[] {searchParent, world.Renderer.Entities.GetClientCode(searchParent.Component.Parent) }))
-            {
-                var result = RemoveFirstLine(label.Data.LabelText);
-                if (result.FirstLine.ToLower().StartsWith("[" + query.ToLower() + "]"))
-                {
-                    return (true, result.LeftOver, label);
-                }
-            }
-            return (false, "", null);
-        }
         // Thanks to Ecconia for this method
         // https://github.com/Ecconia/Ecconia-LogicWorld-Mods/blob/master/EcconiasChaosClientMod/EcconiasChaosClientMod/src/client/ThisIsBlack.cs#L131
         private static ComponentSelection extractMultiSelectedObjects()
         {
-            var field = typeof(MultiSelector).GetField("CurrentSelection", BindingFlags.NonPublic | BindingFlags.Static);
+            FieldInfo field = typeof(MultiSelector).GetField("CurrentSelection", BindingFlags.NonPublic | BindingFlags.Static);
             if (field == null)
             {
                 LConsole.WriteLine("Could not get selection of components, as the 'CurrentSelection' field could not be found. Report this issue to the mod maintainer.");
                 return null;
             }
-            var value = field.GetValue(null);
+            object value = field.GetValue(null);
             if (value == null)
             {
                 LConsole.WriteLine("Could not get selection of components, as the current selection is 'null'. Report this issue to the mod maintainer.");
@@ -95,10 +72,10 @@ namespace ScriptableChip.Client.ComponentCode
             }
             return selection;
         }
-        [Command("sCHZ.UpdateScript", Description = "Updates the selected chip(s) scripts to the contents of the clipboard.")]
+        [Command("sCHZ.UpdateScript", Description = "Updates the selected chip(s) scripts' to the contents of the clipboard.")]
         public static void UpdateScript()
         {
-            var world = Instances.MainWorld;
+            IClientWorld world = Instances.MainWorld;
             if (world == null)
             {
                 LConsole.WriteLine("Join a world before using this command.");
@@ -106,27 +83,27 @@ namespace ScriptableChip.Client.ComponentCode
             }
             if (MultiSelector.GameStateTextID.Equals(GameStateManager.CurrentStateID))
             {
-                var clipboard = GUIUtility.systemCopyBuffer;
-                var selection = extractMultiSelectedObjects();
+                string clipboard = GUIUtility.systemCopyBuffer;
+                ComponentSelection selection = extractMultiSelectedObjects();
                 if (selection == null)
                 {
                     return; //Whoops, could not get selection, stop execution.
                 }
 
-                foreach (var address in selection)
+                foreach (ComponentAddress address in selection)
                 {
                     IComponentClientCode code = world.Renderer.Entities.GetClientCode(address);
                     if (code != null && code is ScriptableChip)
                     {
-                        ((ScriptableChip)code).SendScriptToServer(clipboard);
+                        ((ScriptableChip)code).PendingScipt = clipboard;
                     }
                 }
             }
         }
-        [Command("sCHZ.GetScripts", Description = "Prints the script(s) from the selected chip.")]
-        public static void CopyScript()
+        [Command("sCHZ.GetScript", Description = "Prints the script(s) from the selected chip(s).")]
+        public static void GetScripts()
         {
-            var world = Instances.MainWorld;
+            IClientWorld world = Instances.MainWorld;
             if (world == null)
             {
                 LConsole.WriteLine("Join a world before using this command.");
@@ -134,18 +111,170 @@ namespace ScriptableChip.Client.ComponentCode
             }
             if (MultiSelector.GameStateTextID.Equals(GameStateManager.CurrentStateID))
             {
-                var clipboard = GUIUtility.systemCopyBuffer;
-                var selection = extractMultiSelectedObjects();
+                string clipboard = GUIUtility.systemCopyBuffer;
+                ComponentSelection selection = extractMultiSelectedObjects();
                 if (selection == null)
                 {
                     return; //Whoops, could not get selection, stop execution.
                 }
 
-                foreach (var addy in selection)
+                foreach (ComponentAddress addy in selection)
                 {
-                    var code = world.Renderer.Entities.GetClientCode(addy);
-                    LConsole.WriteLine(((ScriptableChip)code).Data.CurrentScript);
+                    IComponentClientCode code = world.Renderer.Entities.GetClientCode(addy);
+                    LConsole.WriteLine(((ScriptableChip)code).CurrentScript);
                 }
+            }
+        }
+        [Command("sCHZ.LinkLabel", Description = "Links the first selected chip with the first selected label.")]
+        public static void LinkLabel()
+        {
+            IClientWorld world = Instances.MainWorld;
+            if (world == null)
+            {
+                LConsole.WriteLine("Join a world before using this command.");
+                return;
+            }
+            if (MultiSelector.GameStateTextID.Equals(GameStateManager.CurrentStateID))
+            {
+                ComponentSelection selection = extractMultiSelectedObjects();
+                if (selection == null)
+                {
+                    return; //Whoops, could not get selection, stop execution.
+                }
+
+                IEnumerable<ScriptableChip> SelectedChips = selection.Select((addy) => world.Renderer.Entities.GetClientCode(addy))
+                    .Where((code) => code is ScriptableChip)
+                    .Select((code) => code as ScriptableChip);
+                IEnumerable<Label> SelectedLabels = selection.Select((addy) => world.Renderer.Entities.GetClientCode(addy))
+                    .Where((code) => code is Label)
+                    .Select((code) => code as Label);
+
+                if (SelectedChips.Count() < 1 || SelectedChips.Count() < 1)
+                {
+                    LConsole.WriteLine("Must select 1 chip and 1 label!");
+                    return;
+                }
+
+                LConsole.WriteLine($"Component @ {SelectedChips.First().Address} linked to label @ {SelectedLabels.First().Address}");
+                SelectedChips.First().LinkedLabel = SelectedLabels.First().Address;
+            }
+        }
+        [Command("sCHZ.GetLinkedLabel", Description = "Prints the linked label(s) from the selected chip(s).")]
+        public static void GetLabels()
+        {
+            IClientWorld world = Instances.MainWorld;
+            if (world == null)
+            {
+                LConsole.WriteLine("Join a world before using this command.");
+                return;
+            }
+            if (MultiSelector.GameStateTextID.Equals(GameStateManager.CurrentStateID))
+            {
+                ComponentSelection selection = extractMultiSelectedObjects();
+                if (selection == null)
+                {
+                    return; //Whoops, could not get selection, stop execution.
+                }
+
+                IEnumerable<ScriptableChip> SelectedChips = selection.Select((addy) => world.Renderer.Entities.GetClientCode(addy))
+                    .Where((code) => code is ScriptableChip)
+                    .Select((code) => code as ScriptableChip);
+
+                if (SelectedChips.Count() < 1)
+                {
+                    LConsole.WriteLine("Must select at least 1 chip!");
+                    return;
+                }
+
+                SelectedChips.ForEach((chip) =>
+                {
+                    if (chip.LinkedLabel != ComponentAddress.Null)
+                    {
+                        LConsole.WriteLine($"Chip @ {chip.Address} is linked to label @ {chip.LinkedLabel}");
+                    }
+                });
+            }
+        }
+        [Command("sCHZ.ClearLinkedLabel", Description = "Clears the linekd label(s) from the selected chip(s).")]
+        public static void ClearLabel()
+        {
+            IClientWorld world = Instances.MainWorld;
+            if (world == null)
+            {
+                LConsole.WriteLine("Join a world before using this command.");
+                return;
+            }
+            if (MultiSelector.GameStateTextID.Equals(GameStateManager.CurrentStateID))
+            {
+                ComponentSelection selection = extractMultiSelectedObjects();
+                if (selection == null)
+                {
+                    return; //Whoops, could not get selection, stop execution.
+                }
+
+                IEnumerable<ScriptableChip> SelectedChips = selection.Select((addy) => world.Renderer.Entities.GetClientCode(addy))
+                    .Where((code) => code is ScriptableChip)
+                    .Select((code) => code as ScriptableChip);
+
+                if (SelectedChips.Count() < 1)
+                {
+                    LConsole.WriteLine("Must select at least 1 chip!");
+                    return;
+                }
+
+                SelectedChips.ForEach((chip) =>
+                {
+                    if (chip.LinkedLabel != ComponentAddress.Null)
+                    {
+                        chip.LinkedLabel = ComponentAddress.Null;
+                    }
+                });
+            }
+        }
+        [Command("sCHZ.UpdateScriptFromLabel", Description = "Updates the selected chip(s) scripts' from their linked labels.")]
+        public static void UpdateLinkedLabels()
+        {
+            IClientWorld world = Instances.MainWorld;
+            if (world == null)
+            {
+                LConsole.WriteLine("Join a world before using this command.");
+                return;
+            }
+            if (MultiSelector.GameStateTextID.Equals(GameStateManager.CurrentStateID))
+            {
+                ComponentSelection selection = extractMultiSelectedObjects();
+                if (selection == null)
+                {
+                    return; //Whoops, could not get selection, stop execution.
+                }
+
+                IEnumerable<ScriptableChip> SelectedChips = selection.Select((addy) => world.Renderer.Entities.GetClientCode(addy))
+                    .Where((code) => code is ScriptableChip)
+                    .Select((code) => code as ScriptableChip);
+
+                if (SelectedChips.Count() < 1)
+                {
+                    LConsole.WriteLine("Must select at least 1 chip!");
+                    return;
+                }
+
+                SelectedChips.ForEach((chip) =>
+                {
+                    if (chip.LinkedLabel != ComponentAddress.Null)
+                    {
+                        IComponentClientCode clientCode = world.Renderer.Entities.GetClientCode(chip.LinkedLabel);
+                        if (clientCode is Label label)
+                        {
+                            LConsole.WriteLine($"Chip @ {chip.Address} pulling script from label {label.Address}");
+                            chip.PendingScipt = label.Data.LabelText;
+                        }
+                        else
+                        {
+                            LConsole.WriteLine($"Chip @ {chip.Address} has a label address that doesn't point to a label! {clientCode.Address}");
+                            chip.LinkedLabel = ComponentAddress.Null;
+                        }
+                    }
+                });
             }
         }
 
@@ -166,66 +295,58 @@ namespace ScriptableChip.Client.ComponentCode
             };
         }
 
-        internal Label ourScript = null;
-        internal string lastScriptAttempt = "";
-        internal Timer updateInterval;
-        protected override void Initialize()
-        {
-            base.Initialize();
-            updateInterval = new Timer(Update, this, 0, 500);
-        }
-        protected static void Update(object state)
-        {
-            var us = (ScriptableChip)state;
-            if (!us.PlacedInMainWorld)
-                return;
-
-            var Result = SearchForContentByLabel("script", us);
-            if (Result.Success)
-            {
-                if (Result.Script != us.lastScriptAttempt)
-                {
-                    LConsole.WriteLine("FrameUpdate: Sending script to server...");
-                    us.lastScriptAttempt = Result.Script;
-                    us.SendScriptToServer(Result.Script);
-                }
-            }
-        }
-
+        #region Data Management
         protected override void DataUpdate()
         {
             base.DataUpdate();
-            if (Data.CurrentScript == null) return;
-            var result = ExtractTitleFromLogicScript(Data.CurrentScript);
-            if (result.success)
-                ChangeScriptTitle(result.title);
-        }
-        private void ChangeScriptTitle(string title)
-        {
-            chipTitle.Text = title;
-            QueueChipTitleUpdate();
-        }
-        private void SendScriptToServer(string newScript)
-        {
-            var result = ExtractTitleFromLogicScript(newScript);
-            Data.CurrentScript = newScript;
-            if (result.success)
-                ChangeScriptTitle(result.title);
-        }
-        internal (bool success, string title, string script) ExtractTitleFromLogicScript(string script)
-        {
-            List<string> lines = script.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).ToList();
-            if (lines.Count < 1) return (false, "ScriptableChip", script);
-            string firstLine = lines[0];
-            string titlePrefix = "title ";
-
-            if (lines[0].StartsWith(titlePrefix))
+            if (pendingScriptErrors != string.Empty)
             {
-                lines.RemoveAt(0);
-                return (true, firstLine.Substring(titlePrefix.Length), string.Join("\n", lines));
+                LConsole.WriteLine(pendingScriptErrors);
+                PendingSciptErrors = string.Empty;
             }
-
-            return (false, "ScriptableChip", script);
         }
+        public override void DeserializeNetworkedData(ref MemoryByteReader Reader)
+        {
+            base.DeserializeNetworkedData(ref Reader);
+
+            currentScript = Reader.ReadString();
+            pendingScript = Reader.ReadString();
+            pendingScriptErrors = Reader.ReadString();
+            linkedLabel = Reader.ReadComponentAddress();
+
+            int RegisterCount = Reader.ReadInt32();
+            registers = RegisterCount == 0 ? Array.Empty<ulong>() : new ulong[RegisterCount];
+            if (RegisterCount == 0) return;
+            for (int i = 0; i < RegisterCount; i++)
+            {
+                registers[i] = Reader.ReadUInt64();
+            }
+        }
+        public override void SerializeNetworkedData(ref ByteWriter Writer)
+        {
+            base.SerializeNetworkedData(ref Writer);
+
+            Writer.Write(currentScript);
+            Writer.Write(pendingScript);
+            Writer.Write(pendingScriptErrors);
+            Writer.Write(linkedLabel);
+
+            Writer.Write(registers.Length);
+            if (registers.Length == 0) return;
+            foreach (ulong register in registers)
+            {
+                Writer.Write(register);
+            }
+        }
+        public override void SetDefaultNetworkedData()
+        {
+            base.SetDefaultNetworkedData();
+            currentScript = string.Empty;
+            pendingScript = string.Empty;
+            pendingScriptErrors = string.Empty;
+            linkedLabel = ComponentAddress.Null;
+            registers = Array.Empty<ulong>();
+        }
+        #endregion
     }
 }

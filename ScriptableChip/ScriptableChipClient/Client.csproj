@@ -91,6 +91,7 @@
   <ItemGroup>
     <Compile Include="..\src\client\**\*.cs" Link="src\client\%(RecursiveDir)%(Filename)%(Extension)" />
     <Compile Include="..\..\AbstractChipz\src\client\**\*.cs" Link="Chipz\src\client\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\..\AbstractChipz\src\shared\**\*.cs" Link="Chipz\src\shared\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ScriptableChipShared\Shared.csproj">

@@ -1,20 +1,23 @@
-﻿using System.Text;
-using JimmysUnityUtilities;
+﻿using JimmysUnityUtilities;
 using LogicAPI.Data.BuildingRequests;
 using LogicWorld.BuildingManagement;
-using LogicWorld.ClientCode.LabelAlignment;
 using LogicWorld.ClientCode;
+using LogicWorld.ClientCode.LabelAlignment;
 using LogicWorld.Interfaces;
 using LogicWorld.Interfaces.Building;
-using LogicWorld.Rendering.Components;
 using LogicWorld.References;
 using LogicWorld.Rendering.Chunks;
+using LogicWorld.Rendering.Components;
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 using static LogicWorld.Building.WorldOutliner;
 
 namespace Chipz.ComponentCode
 {
+    /// <summary>
+    /// Abstract class representing a dynamic chip in the game with client code, inherits from ComponentClientCode and implements IComponentClientCode interface.
+    /// </summary>
     public abstract class DynamicChip : ComponentClientCode, IComponentClientCode
     {
         #region Static Methods
@@ -62,6 +65,9 @@ namespace Chipz.ComponentCode
 
             return superscript;
         }
+        /// <summary>
+        /// Data object to hold label data for creating a text label.
+        /// </summary>
         public struct DataObj : Label.IData
         {
             public string LabelText { get; set; }
@@ -86,7 +92,7 @@ namespace Chipz.ComponentCode
         }
         #endregion
 
-        public GameObject chipTitleLabel;
+        public LabelTextManager chipTitleLabel;
         #region Abstract Variables
         public abstract ColoredString ChipTitle { get; }
         #endregion
@@ -136,14 +142,15 @@ namespace Chipz.ComponentCode
         }
         public void QueueChipTitleUpdate(string hintText = "")
         {
-            chipTitleLabel.GetComponent<LabelTextManager>().DataUpdate(new DataObj()
+            if (!this.PlacedInMainWorld) return;
+            chipTitleLabel?.DataUpdate(new DataObj()
             {
                 HorizontalAlignment = LabelAlignmentHorizontal.Center,
                 VerticalAlignment = LabelAlignmentVertical.Middle,
                 LabelColor = ChipTitle.Color,
                 LabelFontSizeMax = 1f,
                 LabelMonospace = true,
-                LabelText = ChipTitle.Text,
+                LabelText = ChipTitle.Text ?? "",
                 SizeX = 4,
                 SizeZ = 4
             });
@@ -155,9 +162,9 @@ namespace Chipz.ComponentCode
         {
             List<FixedPlacingPoint> Points = new List<FixedPlacingPoint>();
 
-            for (var i = 0; i < InputCount / 2; i++)
+            for (int i = 0; i < InputCount / 2; i++)
             {
-                for (var k = 0; k < OutputCount / 2; k++)
+                for (int k = 0; k < OutputCount / 2; k++)
                 {
                     Points.Add(new FixedPlacingPoint()
                     {
@@ -179,9 +186,9 @@ namespace Chipz.ComponentCode
             float halfWidth = width / 2f;
             float halfHeight = height / 2f;
 
-            var decorations = new List<IDecoration>();
+            List<IDecoration> decorations = new List<IDecoration>();
 
-            for (var i = 0; i < width * 2; i++)
+            for (int i = 0; i < width * 2; i++)
             {
                 bool FirstSide = i < width;
                 int iModulated = i % width;
@@ -192,7 +199,7 @@ namespace Chipz.ComponentCode
                 Quaternion RotToSet = Quaternion.Euler(90f, FirstSide ? 0f : 180f, 0f);
 
                 // Add Input Pin #
-                var data = GetInputPinShortLabel(i + 1);
+                ColoredString data = GetInputPinShortLabel(i + 1);
                 decorations.Add(new Decoration()
                 {
                     LocalPosition = PosToPlace * 0.3f,
@@ -236,7 +243,7 @@ namespace Chipz.ComponentCode
                 });
             }
 
-            for (var i = 0; i < height * 2; i++)
+            for (int i = 0; i < height * 2; i++)
             {
                 bool FirstSide = i < height;
                 int iModulated = i % height;
@@ -246,7 +253,7 @@ namespace Chipz.ComponentCode
                     iModulated + (FirstSide ? 0.5f : -0.5f));
                 Quaternion RotToSet = Quaternion.Euler(90f, FirstSide ? 90f : -90f, 0f);
                 // Add Output Pin #
-                var data = GetOutputPinShortLabel(i + 1);
+                ColoredString data = GetOutputPinShortLabel(i + 1);
                 decorations.Add(new Decoration()
                 {
                     LocalPosition = PosToPlace * 0.3f,
@@ -290,7 +297,7 @@ namespace Chipz.ComponentCode
                 });
             }
 
-            chipTitleLabel = CreateTextLabel(new DataObj()
+            GameObject labelGo = CreateTextLabel(new DataObj()
             {
                 HorizontalAlignment = LabelAlignmentHorizontal.Center,
                 VerticalAlignment = LabelAlignmentVertical.Middle,
@@ -302,11 +309,13 @@ namespace Chipz.ComponentCode
                 SizeZ = 4
             });
 
+            chipTitleLabel = labelGo.GetComponent<LabelTextManager>();
+
 
 
             decorations.Add(new Decoration()
             {
-                DecorationObject = chipTitleLabel,
+                DecorationObject = labelGo,
                 LocalPosition = new Vector3(halfWidth - 2.5f, 1.01f, halfHeight + 1.5f) * 0.3f,
                 LocalRotation = Quaternion.Euler(90, 90, 0),
                 IncludeInModels = true

@@ -1,46 +1,39 @@
 ﻿using LogicAPI.Server.Components;
 using LogicAPI.Server.Managers;
-using System.Reflection;
-using Chipz.CustomData;
+using LogicWorld.SharedCode.BinaryStuff;
 using System;
+using System.Reflection;
+using UnityEngine;
 
 namespace Chipz.ComponentCode
 {
-    public abstract class ResizableChip<T> : LogicComponent where T : ResizableChipCustomData, new()
+    public abstract class ResizableChip : NetworkedDynamicChip
     {
+        public abstract Vector2Int DefaultSize { get; }
+
+        #region Private Variables
+        private int sizeX;
+        private int sizeZ;
+        #endregion
         #region Public Variables
-        public T Data = new T();
-        public IWorldMutationManager worldMutationManager => (IWorldMutationManager)((typeof(LogicComponent).GetField("WorldMutationManager", BindingFlags.Instance | BindingFlags.NonPublic) ?? throw new NullReferenceException()).GetValue(this) ?? throw new NullReferenceException());
+        public int SizeX { get => sizeX; set { sizeX = value; QueueNetworkedDataUpdate(); } }
+        public int SizeZ { get => sizeZ; set { sizeZ = value; QueueNetworkedDataUpdate(); } }
         #endregion
 
-        public ResizableChip()
+        public override void DeserializeNetworkedData(ref MemoryByteReader Reader)
         {
-            DataManagementInitialize();
+            sizeX = Reader.ReadInt32();
+            sizeZ = Reader.ReadInt32();
         }
-
-        #region Data Management
-        internal void DataManagementInitialize()
+        public override void SerializeNetworkedData(ref ByteWriter Writer)
         {
-            Data.OnDataUpdateRequired += delegate ()
-            {
-                worldMutationManager.ForceDataRefresh(this);
-            };
+            Writer.Write(sizeX);
+            Writer.Write(sizeZ);
         }
-        protected override void DeserializeData(byte[] data)
+        public override void SetDefaultNetworkedData()
         {
-            try
-            {
-                Data.DeserializeData(data);
-            }
-            catch (OutOfMemoryException)
-            {
-            }
+            sizeX = DefaultSize.x;
+            sizeZ = DefaultSize.y;
         }
-        protected override byte[] SerializeCustomData()
-        {
-            return Data.SerializeCustomData();
-        }
-        public override bool HasPersistentValues => true;
-        #endregion
     }
 }

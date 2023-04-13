@@ -1,25 +1,32 @@
 ﻿using JimmysUnityUtilities;
+using LogicAPI.Data;
 using LogicAPI.Data.BuildingRequests;
 using LogicWorld.BuildingManagement;
 using LogicWorld.ClientCode.Resizing;
+using LogicWorld.SharedCode.BinaryStuff;
 using System;
 using UnityEngine;
-using LogicAPI.Data;
-using Chipz.CustomData;
 
 namespace Chipz.ComponentCode
 {
 
-    public abstract class ResizableChip<T> : DynamicChip, IResizableX, IResizableZ, IResizableCallbackReciever where T : ResizableChipCustomData, new()
+    public abstract class ResizableChip : NetworkedDynamicChip, IResizableX, IResizableZ, IResizableCallbackReciever
     {
+        public abstract Vector2Int DefaultSize { get; }
+
+        #region Private Variables
+        private int sizeX;
+        private int sizeZ;
+        #endregion
+
         #region Implement IResizableX
-        public int SizeX { get => Data.SizeX; set { Data.SizeX = value; } }
+        public int SizeX { get => sizeX; set { sizeX = value; QueueNetworkedDataUpdate(); } }
         public float GridIntervalX => 1;
         public abstract int MinX { get; }
         public abstract int MaxX { get; }
         #endregion
         #region Implement IResizableZ
-        public int SizeZ { get => Data.SizeZ; set { Data.SizeZ = value; } }
+        public int SizeZ { get => sizeZ; set { sizeZ = value; QueueNetworkedDataUpdate(); } }
         public float GridIntervalZ => 1;
         public abstract int MinZ { get; }
         public abstract int MaxZ { get; }
@@ -32,14 +39,6 @@ namespace Chipz.ComponentCode
         internal Color24 ResizingColor = Color24.CyanBlueAzure;
         internal GpuColor ResizingColorOld;
         #endregion
-        #region Public Variables
-        public T Data = new T();
-        #endregion
-
-        public ResizableChip()
-        {
-            DataManagementInitialize();
-        }
 
         #region Resizing Functionality
         protected override void DataUpdate()
@@ -65,38 +64,21 @@ namespace Chipz.ComponentCode
             RequestPinCountChange(SizeX * 2, SizeZ * 2);
         }
         #endregion
-
         #region Data Management
-        internal void DataManagementInitialize()
+        public override void DeserializeNetworkedData(ref MemoryByteReader Reader)
         {
-            Data.OnDataUpdateRequired += delegate ()
-            {
-                byte[] array = SerializeCustomData();
-                QueueDataUpdate();
-                if (PlacedInMainWorld)
-                {
-                    BuildRequestManager.SendBuildRequestWithoutAddingToUndoStack(new BuildRequest_UpdateComponentCustomData(Address, array), null);
-                }
-            };
+            sizeX = Reader.ReadInt32();
+            sizeZ = Reader.ReadInt32();
         }
-        protected override void DeserializeData(byte[] data)
+        public override void SerializeNetworkedData(ref ByteWriter Writer)
         {
-            if (data == null)
-            {
-                Data.SetDefaultValues();
-            }
-            try
-            {
-                Data.DeserializeData(data);
-            }
-            catch (OutOfMemoryException)
-            {
-                Data.SetDefaultValues();
-            }
+            Writer.Write(sizeX);
+            Writer.Write(sizeZ);
         }
-        public override byte[] SerializeCustomData()
+        public override void SetDefaultNetworkedData()
         {
-            return Data.SerializeCustomData();
+            sizeX = DefaultSize.x;
+            sizeZ = DefaultSize.y;
         }
         #endregion
     }
