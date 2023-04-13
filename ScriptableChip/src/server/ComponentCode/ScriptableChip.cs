@@ -1,4 +1,5 @@
 ﻿using Chipz.Server.ComponentCode;
+using JimmysUnityUtilities;
 using LICC;
 using LogicAPI.Data;
 using LogicAPI.Server.Components;
@@ -34,13 +35,21 @@ namespace ScriptableChip.Server.ComponentCode
         int IMachine.InputCount => Inputs.Count;
         int IMachine.OutputCount => Outputs.Count;
 
-
+        internal bool autoUpdate = false;
+        internal int updateFreq = 1;
+        internal int updateCount = 1;
         internal bool hasRunStartup = false;
         internal Script compiledScript = new Script();
         protected override void DoLogicUpdate()
         {
-            compiledScript.Run(this, !hasRunStartup, false);
-            if (!hasRunStartup) hasRunStartup = true;
+            if (!autoUpdate || updateCount % updateFreq == 0)
+            {
+                compiledScript.Run(this, !hasRunStartup, false);
+                if (!hasRunStartup) hasRunStartup = true;
+            }
+            if (!autoUpdate) return;
+            updateCount++;
+            QueueLogicUpdate();
         }
 
         private (bool Succeeded, IReadOnlyList<Error> Errors, Script Script) TryInterpretScript(string script)
@@ -103,7 +112,7 @@ namespace ScriptableChip.Server.ComponentCode
         #endregion
 
         #region Data Management
-        public void TryCompileScript(string script)
+        public (bool success, string error, Script script, bool AutoUpdate, int updateFreq) TryCompileScript(string script)
         {
             (bool Succeeded, IReadOnlyList<Error> Errors, Script Script) result = TryInterpretScript(script);
             if (!result.Succeeded)
@@ -116,22 +125,52 @@ namespace ScriptableChip.Server.ComponentCode
                     stringBuilder.AppendLine($"// Error: {error.Severity}, Message: {error.Message}");
                 }
 
-                LConsole.WriteLine(stringBuilder.ToString());
+                return (false, stringBuilder.ToString(), null, false, 1);
             }
             else
             {
-                compiledScript = result.Script;
-                hasRunStartup = false;
-
-                QueueLogicUpdate();
+                bool autoUpdate = false;
+                int updateFreq = 1;
+                script.Split(new char[] { '\r', '\n' }).Where(line => line.Replace(" ", "").StartsWith("//")).ForEach(commentLine =>
+                {
+                    commentLine = commentLine.Replace(" ", "").ToLower();
+                    if (commentLine.StartsWith("//[autoupdate]"))
+                    {
+                        autoUpdate = true;
+                        if (commentLine.Length > ("//[autoupdate]").Length)
+                        {
+                            int potentionalNumber = Convert.ToInt32(commentLine.Substring(("//[autoupdate]").Length));
+                            if (potentionalNumber != 0)
+                            {
+                                updateFreq = potentionalNumber;
+                            }
+                        }
+                    }
+                });
+                return (true, string.Empty, result.Script, autoUpdate, updateFreq);
             }
         }
         public override void DeserializeNetworkedData(ref MemoryByteReader Reader)
         {
             base.DeserializeNetworkedData(ref Reader);
 
-            currentScript = Reader.ReadString();
-            TryCompileScript(currentScript);
+            string suggestedCurrentScript = Reader.ReadString();
+            if (suggestedCurrentScript != string.Empty)
+            {
+                (bool success, string error, Script script, bool AutoUpdate, int _updateFreq) = TryCompileScript(suggestedCurrentScript);
+                if (success)
+                {
+                    currentScript = suggestedCurrentScript;
+                    compiledScript = script;
+                    autoUpdate = AutoUpdate;
+                    updateFreq = _updateFreq;
+                    hasRunStartup = true;
+
+                    QueueLogicUpdate();
+                }
+                else
+                    LConsole.WriteLine(error);
+            }
             pendingScript = Reader.ReadString();
             pendingScriptErrors = Reader.ReadString();
             linkedLabel = Reader.ReadComponentAddress();
@@ -173,23 +212,18 @@ namespace ScriptableChip.Server.ComponentCode
         {
             if (pendingScript != string.Empty)
             {
-                (bool Succeeded, IReadOnlyList<Error> Errors, Script Script) result = TryInterpretScript(pendingScript);
-                if (!result.Succeeded)
-                {
-                    StringBuilder stringBuilder = new StringBuilder();
-                    stringBuilder.AppendLine("// [ERRORS]");
-                    stringBuilder.AppendLine("// UpdateScript: Found errors in the script.");
-                    foreach (Error error in result.Errors)
-                    {
-                        stringBuilder.AppendLine($"// Error: {error.Severity}, Message: {error.Message}");
-                    }
+                (bool success, string error, Script script, bool AutoUpdate, int UpdateFreq) = TryCompileScript(pendingScript);
 
-                    pendingScriptErrors = stringBuilder.ToString();
+                if (!success)
+                {
+                    pendingScriptErrors = error;
                 }
                 else
                 {
                     currentScript = pendingScript;
-                    compiledScript = result.Script;
+                    compiledScript = script;
+                    autoUpdate = AutoUpdate;
+                    updateFreq = UpdateFreq;
                     hasRunStartup = false;
 
                     QueueLogicUpdate();
