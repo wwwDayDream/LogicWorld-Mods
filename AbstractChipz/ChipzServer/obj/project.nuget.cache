@@ -1,8 +1,18 @@
 {
   "version": 2,
-  "dgSpecHash": "YjRG7q++5RyvGx2aDFV6qyFS8Vr6k6vm7hspHuCZ31HWF0OVJA5P3dbjfk/RcvpnEU+83Hl3iIYTNON0N/KNUQ==",
-  "success": true,
+  "dgSpecHash": "4hkxOQ0dYVYUydEdetlvJeDbJ2f0xcxrqXtE9BO3za0O8YHOQ/F03BaK3BfBdVSIdvHaRLo1eePHnnmQtQKVqQ==",
+  "success": false,
   "projectFilePath": "C:\\SteamLibrary\\steamapps\\common\\Logic World\\GameData\\AbstractChipz\\ChipzServer\\ChipzServer.csproj",
   "expectedPackageFiles": [],
-  "logs": []
+  "logs": [
+    {
+      "code": "NU1104",
+      "level": "Error",
+      "message": "Unable to find project 'C:\\SteamLibrary\\steamapps\\common\\Logic World\\GameData\\AbstractChipz\\ChipzShared\\ChipzShared.csproj'. Check that the project reference is valid and that the project file exists.",
+      "libraryId": "C:\\SteamLibrary\\steamapps\\common\\Logic World\\GameData\\AbstractChipz\\ChipzShared\\ChipzShared.csproj",
+      "targetGraphs": [
+        "net7.0"
+      ]
+    }
+  ]
 }

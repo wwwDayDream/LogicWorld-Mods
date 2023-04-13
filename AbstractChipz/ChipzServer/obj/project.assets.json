@@ -5,7 +5,9 @@
   },
   "libraries": {},
   "projectFileDependencyGroups": {
-    "net7.0": []
+    "net7.0": [
+      "C:\\SteamLibrary\\steamapps\\common\\Logic World\\GameData\\AbstractChipz\\ChipzShared\\ChipzShared.csproj"
+    ]
   },
   "packageFolders": {
     "C:\\Users\\daymo\\.nuget\\packages\\": {},
@@ -38,7 +40,11 @@
       "frameworks": {
         "net7.0": {
           "targetAlias": "net7.0",
-          "projectReferences": {}
+          "projectReferences": {
+            "C:\\SteamLibrary\\steamapps\\common\\Logic World\\GameData\\AbstractChipz\\ChipzShared\\ChipzShared.csproj": {
+              "projectPath": "C:\\SteamLibrary\\steamapps\\common\\Logic World\\GameData\\AbstractChipz\\ChipzShared\\ChipzShared.csproj"
+            }
+          }
         }
       },
       "warningProperties": {
@@ -69,5 +75,16 @@
         "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.101\\RuntimeIdentifierGraph.json"
       }
     }
-  }
+  },
+  "logs": [
+    {
+      "code": "NU1104",
+      "level": "Error",
+      "message": "Unable to find project 'C:\\SteamLibrary\\steamapps\\common\\Logic World\\GameData\\AbstractChipz\\ChipzShared\\ChipzShared.csproj'. Check that the project reference is valid and that the project file exists.",
+      "libraryId": "C:\\SteamLibrary\\steamapps\\common\\Logic World\\GameData\\AbstractChipz\\ChipzShared\\ChipzShared.csproj",
+      "targetGraphs": [
+        "net7.0"
+      ]
+    }
+  ]
 }

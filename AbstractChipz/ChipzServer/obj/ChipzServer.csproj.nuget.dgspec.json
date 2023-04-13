@@ -31,7 +31,11 @@
         "frameworks": {
           "net7.0": {
             "targetAlias": "net7.0",
-            "projectReferences": {}
+            "projectReferences": {
+              "C:\\SteamLibrary\\steamapps\\common\\Logic World\\GameData\\AbstractChipz\\ChipzShared\\ChipzShared.csproj": {
+                "projectPath": "C:\\SteamLibrary\\steamapps\\common\\Logic World\\GameData\\AbstractChipz\\ChipzShared\\ChipzShared.csproj"
+              }
+            }
           }
         },
         "warningProperties": {
