@@ -56,22 +56,22 @@ namespace Chipz.Variants
                 int iModulated = i % (int)width;
                 prefabInputs.Add(new ComponentInput()
                 {
-                    Length = 0.2f,
-                    Position = new Vector3(iModulated - 0.333f, 0.06f, firstPass ? -0.5f : height - 0.5f),
+                    Length = 0.48f,
+                    Position = new Vector3(iModulated - 0.333f, 0.01f, firstPass ? -0.5f : height - 0.5f),
                     Rotation = new Vector3(0f, 0, 0),
                     Bottomless = false,
                 });
                 prefabInputs.Add(new ComponentInput()
                 {
-                    Length = 0.4f,
-                    Position = new Vector3(iModulated, 0.06f, firstPass ? -0.7f : height - 0.3f),
+                    Length = 0.33f,
+                    Position = new Vector3(iModulated, 0.05f, firstPass ? -0.7f : height - 0.3f),
                     Rotation = new Vector3(0f, 0, 0),
                     Bottomless = false,
                 });
                 prefabInputs.Add(new ComponentInput()
                 {
-                    Length = 0.2f,
-                    Position = new Vector3(iModulated + 0.333f, 0.06f, firstPass ? -0.5f : height - 0.5f),
+                    Length = 0.48f,
+                    Position = new Vector3(iModulated + 0.333f, 0.01f, firstPass ? -0.5f : height - 0.5f),
                     Rotation = new Vector3(0f, 0, 0),
                     Bottomless = false,
                 });
