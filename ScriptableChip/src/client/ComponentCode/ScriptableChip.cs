@@ -4,8 +4,10 @@ using LICC;
 using LogicAPI.Data;
 using LogicWorld.Building.Overhaul;
 using LogicWorld.ClientCode;
+using LogicWorld.ClientCode.Resizing;
 using LogicWorld.GameStates;
 using LogicWorld.Interfaces;
+using LogicWorld.Rendering.Components;
 using LogicWorld.SharedCode.BinaryStuff;
 using LogicWorld.UI;
 using LogicWorld.UI.MainMenu;
@@ -38,7 +40,6 @@ namespace ScriptableChip.Client.ComponentCode
         private ColoredString chipTitle = new ColoredString() { Color = Color24.White, Text = "ScriptableChip" };
         private string currentScript = string.Empty;
         private string pendingScript = string.Empty;
-        private string lastSentScript = string.Empty;
         private string pendingScriptErrors = string.Empty;
         private ComponentAddress linkedLabel = ComponentAddress.Null;
         private ulong[] registers = Array.Empty<ulong>();
@@ -249,13 +250,36 @@ namespace ScriptableChip.Client.ComponentCode
                     return; //Whoops, could not get selection, stop execution.
                 }
 
-                IEnumerable<ScriptableChip> SelectedChips = selection.Select((addy) => world.Renderer.Entities.GetClientCode(addy))
-                    .Where((code) => code is ScriptableChip)
-                    .Select((code) => code as ScriptableChip);
+                IEnumerable<ScriptableChip> RecurseSearchForChips(IEnumerable<ComponentAddress> search)
+                {
+                    if (search.Count() > 0)
+                    {
+                        IEnumerable<ScriptableChip> chipsToHit = search
+                            .Select(cAddy => world.Renderer.Entities.GetClientCode(cAddy))
+                            .Where(cCode => cCode is ScriptableChip)
+                            .Select(cCode => cCode as ScriptableChip);
+
+                        foreach (ScriptableChip chip in chipsToHit)
+                        {
+                            yield return chip;
+                        }
+
+                        IEnumerable<ScriptableChip> subChipsToHit = RecurseSearchForChips(search
+                            .Select(cAddy => world.Renderer.Entities.GetClientCode(cAddy))
+                            .Where(cCode => (cCode is Mount) || (cCode is CircuitBoard) || (cCode is ScriptableChip))
+                            .SelectMany(cCode => cCode.Component.EnumerateChildren()));
+                        foreach (ScriptableChip sChip in subChipsToHit)
+                        {
+                            yield return sChip;
+                        }
+                    }
+                }
+
+                IEnumerable<ScriptableChip> SelectedChips = RecurseSearchForChips(selection);
 
                 if (SelectedChips.Count() < 1)
                 {
-                    LConsole.WriteLine("Must select at least 1 chip!");
+                    LConsole.WriteLine("There must be at least one chip present in your selection!");
                     return;
                 }
 
@@ -278,6 +302,8 @@ namespace ScriptableChip.Client.ComponentCode
                 });
             }
         }
+        [Command("sCHZ.USFL", Description = "Alias for sCHZ.UpdateScriptFromLabel")]
+        public static void USFL() => UpdateLinkedLabels();
         #endregion
 
         public override ColoredString GetInputPinLabel(int i)
@@ -296,6 +322,9 @@ namespace ScriptableChip.Client.ComponentCode
                 Text = i.ToString() + Superscript("OUT")
             };
         }
+
+        #region Handle Custom Label Check
+        #endregion
 
         #region Data Management
         internal string lastParsedScript = string.Empty;
