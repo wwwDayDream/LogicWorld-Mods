@@ -1,0 +1,7 @@
+ChipSocket:
+    column: Logic
+    category: Chips
+    prefab: dynamic
+    clientCode: Chipz.Client.ComponentCode.ChipSocket
+    logicCode: Chipz.Server.ComponentCode.ChipSocket
+    placingRules: dynamic

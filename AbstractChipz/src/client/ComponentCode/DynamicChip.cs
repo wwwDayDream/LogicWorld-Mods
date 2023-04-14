@@ -247,10 +247,10 @@ namespace Chipz.Client.ComponentCode
                 bool FirstSide = i < height;
                 int iModulated = i % height;
                 Vector3 PosToPlace = new Vector3(
-                    (FirstSide ? -0.7f : width - 0.3f) + (FirstSide ? -0.5f : 0.5f),
+                    (!FirstSide ? -0.7f : width - 0.3f) + (!FirstSide ? -0.5f : 0.5f),
                     0.91f,
-                    iModulated + (FirstSide ? 0.5f : -0.5f));
-                Quaternion RotToSet = Quaternion.Euler(90f, FirstSide ? 90f : -90f, 0f);
+                    iModulated + (!FirstSide ? 0.5f : -0.5f));
+                Quaternion RotToSet = Quaternion.Euler(90f, !FirstSide ? 90f : -90f, 0f);
                 // Add Output Pin #
                 ColoredString data = GetOutputPinShortLabel(i + 1);
                 decorations.Add(new Decoration()
@@ -271,10 +271,10 @@ namespace Chipz.Client.ComponentCode
                     })
                 });
 
-                PosToPlace.x = FirstSide ? -0.96f : width - 0.04f;
+                PosToPlace.x = !FirstSide ? -0.96f : width - 0.04f;
                 PosToPlace.y = 0.2f;
-                PosToPlace.z = iModulated + (FirstSide ? 0.5f : -0.5f);
-                RotToSet = Quaternion.Euler(0f, FirstSide ? 90f : -90f, 0f);
+                PosToPlace.z = iModulated + (!FirstSide ? 0.5f : -0.5f);
+                RotToSet = Quaternion.Euler(0f, !FirstSide ? 90f : -90f, 0f);
                 // Add Output Pin Text
                 data = GetOutputPinLabel(i + 1);
                 decorations.Add(new Decoration()

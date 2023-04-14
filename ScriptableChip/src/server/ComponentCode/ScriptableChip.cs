@@ -23,12 +23,14 @@ namespace ScriptableChip.Server.ComponentCode
         public string PendingScript { get => pendingScript; set { pendingScript = value; QueueNetworkedDataUpdate(); } }
         public string PendingSciptErrors { get => pendingScriptErrors; set { pendingScriptErrors = value; QueueNetworkedDataUpdate(); } }
         public ComponentAddress LinkedLabel { get => linkedLabel; set { linkedLabel = value; QueueNetworkedDataUpdate(); } }
+        public string LinkedFile { get => linkedFile; set { linkedFile = value; QueueNetworkedDataUpdate(); } }
         #endregion
         #region Private Variables 
         private string currentScript = string.Empty;
         private string pendingScript = string.Empty;
         private string pendingScriptErrors = string.Empty;
         private ComponentAddress linkedLabel = ComponentAddress.Null;
+        private string linkedFile = string.Empty;
         private ulong[] registers = Array.Empty<ulong>();
         #endregion
 
@@ -174,6 +176,7 @@ namespace ScriptableChip.Server.ComponentCode
             pendingScript = Reader.ReadString();
             pendingScriptErrors = Reader.ReadString();
             linkedLabel = Reader.ReadComponentAddress();
+            linkedFile = Reader.ReadString();
 
             int RegisterCount = Reader.ReadInt32();
             registers = RegisterCount == 0 ? Array.Empty<ulong>() : new ulong[RegisterCount];
@@ -191,6 +194,7 @@ namespace ScriptableChip.Server.ComponentCode
             Writer.Write(pendingScript);
             Writer.Write(pendingScriptErrors);
             Writer.Write(linkedLabel);
+            Writer.Write(linkedFile);
             Writer.Write(registers.Length);
             if (registers.Length == 0) return;
             foreach (ulong register in registers)
@@ -206,6 +210,7 @@ namespace ScriptableChip.Server.ComponentCode
             pendingScript = string.Empty;
             pendingScriptErrors = string.Empty;
             linkedLabel = ComponentAddress.Null;
+            linkedFile = string.Empty;
             registers = Array.Empty<ulong>();
         }
         protected override void OnCustomDataUpdated()

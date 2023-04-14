@@ -44,9 +44,9 @@ namespace Chipz.Variants
             };
 
 
-            var prefabBlocks = new List<Block>();
-            var prefabInputs = new List<ComponentInput>();
-            var prefabOutputs = new List<ComponentOutput>();
+            List<Block> prefabBlocks = new List<Block>();
+            List<ComponentInput> prefabInputs = new List<ComponentInput>();
+            List<ComponentOutput> prefabOutputs = new List<ComponentOutput>();
 
             prefabBlocks.Add(new Block()
             {
@@ -55,7 +55,7 @@ namespace Chipz.Variants
                 Position = new Vector3(halfWidth - 0.5f, 0, halfHeight - 0.5f)
             });
 
-            for (var i = 0; i < width * 2; i++)
+            for (int i = 0; i < width * 2; i++)
             {
                 bool firstPass = i < width;
                 int iModulated = i % (int)width;
@@ -68,26 +68,34 @@ namespace Chipz.Variants
                 prefabBlocks.Add(new Block()
                 {
                     RawColor = FakePinColor,
+                    ColliderData = new ColliderData()
+                    {
+                        Layer = ColliderLayer.Wire
+                    },
                     Scale = new Vector3(0.5f, 0.5f, 0.4f),
                     Position = new Vector3(iModulated, 0.4f, firstPass ? -0.7f : height - 0.3f)
                 });
             }
 
-            for (var i = 0; i < height * 2; i++)
+            for (int i = 0; i < height * 2; i++)
             {
                 bool firstPass = i < height;
                 int iModulated = i % (int)height;
                 prefabOutputs.Add(new ComponentOutput()
                 {
                     StartOn = false,
-                    Position = new Vector3(firstPass ? -0.5f : width - 0.5f, 0.65f, iModulated),
-                    Rotation = new Vector3(0, 0, firstPass ? 90f : -90f)
+                    Position = new Vector3(!firstPass ? -0.5f : width - 0.5f, 0.65f, iModulated),
+                    Rotation = new Vector3(0, 0, !firstPass ? 90f : -90f)
                 });
                 prefabBlocks.Add(new Block()
                 {
                     RawColor = FakePinColor,
+                    ColliderData = new ColliderData()
+                    {
+                        Layer = ColliderLayer.Wire
+                    },
                     Scale = new Vector3(0.332f, 0.6f, 0.332f),
-                    Position = new Vector3(firstPass ? -0.7f : width - 0.3f, 0f, iModulated)
+                    Position = new Vector3(!firstPass ? -0.7f : width - 0.3f, 0f, iModulated)
                 });
             }
 

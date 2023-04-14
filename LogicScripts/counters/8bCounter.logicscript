@@ -1,0 +1,10 @@
+// [NAME] 8b Counter
+// [AUTOUPDATE]
+input toggle
+output'8 out
+reg'8 counter
+
+when toggle
+    counter '= counter + 1
+    out '= counter 
+end

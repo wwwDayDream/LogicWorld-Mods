@@ -47,7 +47,7 @@ namespace Chipz.Client.ComponentCode
             SetBlockScale(0, new Vector3(SizeX + (Resizing ? 1 : 0), 1, SizeZ + (Resizing ? 1 : 0)));
             SetBlockPosition(0, new Vector3((float)SizeX / 2 - 0.5f, 0, (float)SizeZ / 2 - 0.5f));
         }
-        public void OnResizingBegin()
+        public virtual void OnResizingBegin()
         {
             Resizing = true;
 
@@ -55,7 +55,7 @@ namespace Chipz.Client.ComponentCode
             SetBlockColor(ResizingColor.ToGpuColor(), 0);
             SetBlockScale(0, new Vector3(SizeX + (Resizing ? 1 : 0), 1, SizeZ + (Resizing ? 1 : 0)));
         }
-        public void OnResizingEnd()
+        public virtual void OnResizingEnd()
         {
             Resizing = false;
 

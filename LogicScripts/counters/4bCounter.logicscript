@@ -1,0 +1,10 @@
+// [NAME] 4b Counter
+// [AUTOUPDATE]
+input toggle
+output'4 out
+reg'4 counter
+
+when toggle
+    counter '= counter + 1
+    out '= counter 
+end
