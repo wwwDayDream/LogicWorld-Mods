@@ -266,7 +266,7 @@ namespace ScriptableChip.Client.ComponentCode
 
                         IEnumerable<ScriptableChip> subChipsToHit = RecurseSearchForChips(search
                             .Select(cAddy => world.Renderer.Entities.GetClientCode(cAddy))
-                            .Where(cCode => (cCode is Mount) || (cCode is CircuitBoard) || (cCode is ScriptableChip))
+                            .Where(cCode => (cCode is Mount) || (cCode is CircuitBoard) || (cCode is ScriptableChip) || (cCode is ChipSocket))
                             .SelectMany(cCode => cCode.Component.EnumerateChildren()));
                         foreach (ScriptableChip sChip in subChipsToHit)
                         {
