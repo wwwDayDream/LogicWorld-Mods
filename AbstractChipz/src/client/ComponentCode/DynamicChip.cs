@@ -1,4 +1,5 @@
 ﻿using JimmysUnityUtilities;
+using LogicAPI.Data;
 using LogicAPI.Data.BuildingRequests;
 using LogicWorld.BuildingManagement;
 using LogicWorld.ClientCode;
@@ -132,6 +133,10 @@ namespace Chipz.Client.ComponentCode
         #endregion
 
         #region Utility Methods
+        public GpuColor GetChipColor()
+        {
+            return GetBlockEntity(0).Color;
+        }
         public void RequestPinCountChange(int SizeX, int SizeZ)
         {
             // This is where we need to change our pin count!

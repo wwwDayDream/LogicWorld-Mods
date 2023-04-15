@@ -4,6 +4,7 @@ using LogicAPI.Data;
 using LogicWorld.Interfaces;
 using LogicWorld.Interfaces.Building;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Chipz.Client.ComponentCode
@@ -68,6 +69,54 @@ namespace Chipz.Client.ComponentCode
             // This is where we need to update the size of our main block.
             SetBlockScale(0, new Vector3(SizeX + (Resizing ? 1 : 0), 0.5f, SizeZ + (Resizing ? 1 : 0)));
             SetBlockPosition(0, new Vector3((float)SizeX / 2 - 0.5f, 0, (float)SizeZ / 2 - 0.5f));
+
+            IClientWorld world = Instances.MainWorld;
+            if (world == null) return;
+
+            if (!PlacedInMainWorld) return;
+
+            (bool success, GpuColor color) CheckAddy(ComponentAddress Addy)
+            {
+                if (Addy == null || Addy == ComponentAddress.Null || !world.Renderer.Entities.ComponentIsTracked(Addy))
+                    return (false, new GpuColor(0, 0, 0));
+                IComponentClientCode clientCode = world.Renderer.Entities.GetClientCode(Addy);
+                if (clientCode is DynamicChip dynamicChip)
+                {
+                    return (true, dynamicChip.GetChipColor());
+                }
+                return (false, new GpuColor(0, 0, 0));
+            }
+
+            (bool found, DynamicChip chip) RecurseFirstChipThatsNotSocketAsChild(ComponentAddress addy)
+            {
+                if (addy == null || addy == ComponentAddress.Null || !world.Renderer.Entities.ComponentIsTracked(addy))
+                    return (false, null);
+                IComponentClientCode clientCode = world.Renderer.Entities.GetClientCode(addy);
+                if (!(clientCode is ChipSocket) && clientCode is DynamicChip dynamicChip)
+                {
+                    return (true, dynamicChip);
+                }
+                foreach (ComponentAddress address in clientCode.Component.EnumerateChildren())
+                {
+                    (bool found, DynamicChip chip) = RecurseFirstChipThatsNotSocketAsChild(address);
+                    if (found)
+                        return (true, chip);
+                }
+                return (false, null);
+            }
+
+            (bool found, DynamicChip chip) result = RecurseFirstChipThatsNotSocketAsChild(Address);
+            if (result.found)
+            {
+                SetBlockColor(result.chip.GetChipColor(), 0);
+                return;
+            }
+            (bool parentSuccess, GpuColor parentColor) = CheckAddy(Component.Parent);
+            if (parentSuccess)
+            {
+                SetBlockColor(parentColor, 0);
+                return;
+            }
         }
         public override void OnResizingBegin()
         {
@@ -75,7 +124,7 @@ namespace Chipz.Client.ComponentCode
 
             ResizingColorOld = GetBlockEntity(0).Color;
             SetBlockColor(ResizingColor.ToGpuColor(), 0);
-            SetBlockScale(0, new Vector3(SizeX + (Resizing ? 1 : 0), 0.5f, SizeZ + (Resizing ? 1 : 0)));
+            SetBlockScale(0, new Vector3(SizeX, 0.5f, SizeZ + (Resizing ? 1 : 0)));
         }
         public override void OnResizingEnd()
         {

@@ -1,0 +1,42 @@
+// [NAME] Input Encoder
+input a_a
+input a_b
+input a_c
+input b_a
+input b_b
+input b_c
+input c_a
+input c_b
+input c_c
+
+reg'4 last_Pressed
+
+output'4 pressed
+
+startup
+	last_Pressed = 0b
+end
+
+when *
+	if (a_a)
+		pressed '= 1
+	else if (a_b)
+		pressed '= 2
+	else if (a_c)
+		pressed '= 3
+	else if (b_a)
+		pressed '= 4
+	else if (b_b)
+		pressed '= 5
+	else if (b_c)
+		pressed '= 6
+	else if (c_a)
+		pressed '= 7
+	else if (c_b)
+		pressed '= 8
+	else if (c_c)
+		pressed '= 9
+	else
+		pressed '= 0
+	end
+end

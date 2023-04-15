@@ -1,0 +1,17 @@
+// [NAME] P-Decoder-Fill-X
+input'3 selector
+output'2 out_o
+output'2 out_x
+
+when *
+    out_o '= 0b
+    out_x '= 0b
+    if (selector == 1b)
+        out_o '= 01b
+    else if (selector == 10b)
+        out_x '= 10b
+    else if  (selector == 110b)
+        out_o '= 10b
+        out_x '= 10b
+    end
+end
