@@ -10,6 +10,7 @@ using LogicWorld.SharedCode.BinaryStuff;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using UnityEngine;
 
@@ -44,7 +45,7 @@ namespace ScriptableChip.Server.ComponentCode
         internal Script compiledScript = new Script();
         protected override void DoLogicUpdate()
         {
-            if (!autoUpdate || updateCount % updateFreq == 0)
+            if (!autoUpdate || (autoUpdate && (updateCount % updateFreq == 0)))
             {
                 compiledScript.Run(this, !hasRunStartup, false);
                 if (!hasRunStartup) hasRunStartup = true;
@@ -74,7 +75,7 @@ namespace ScriptableChip.Server.ComponentCode
         {
             if (registers.Length != count)
             {
-                Array.Resize(ref registers, count);
+                Array.Resize(ref registers, count * 64);
             }
         }
         void IMachine.Print(string msg)
@@ -131,20 +132,20 @@ namespace ScriptableChip.Server.ComponentCode
             }
             else
             {
-                bool autoUpdate = false;
-                int updateFreq = 1;
+                bool au = false;
+                int uf = 1;
                 script.Split(new char[] { '\r', '\n' }).Where(line => line.Replace(" ", "").StartsWith("//")).ForEach(commentLine =>
                 {
                     commentLine = commentLine.Replace(" ", "").ToLower();
                     if (commentLine.StartsWith("//[autoupdate]"))
                     {
-                        autoUpdate = true;
+                        au = true;
                         if (commentLine.Length > ("//[autoupdate]").Length)
                         {
                             int potentionalNumber = Convert.ToInt32(commentLine.Substring(("//[autoupdate]").Length));
                             if (potentionalNumber != 0)
                             {
-                                updateFreq = potentionalNumber;
+                                uf = potentionalNumber;
                             }
                         }
                     }
@@ -157,7 +158,7 @@ namespace ScriptableChip.Server.ComponentCode
             base.DeserializeNetworkedData(ref Reader);
 
             string suggestedCurrentScript = Reader.ReadString();
-            if (suggestedCurrentScript != string.Empty)
+            if (suggestedCurrentScript != string.Empty && suggestedCurrentScript != currentScript)
             {
                 (bool success, string error, Script script, bool AutoUpdate, int _updateFreq) = TryCompileScript(suggestedCurrentScript);
                 if (success)

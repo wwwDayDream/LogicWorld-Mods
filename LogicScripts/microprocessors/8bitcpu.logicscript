@@ -1,18 +1,16 @@
-// Ports Declaration
+// [NAME] 8b CPU
 input'1 CLK
 input'8 instruction
 input'8 operand
-output'8 data_out
 output'8 pc_out
+output'8 data_out
 
-// Registers
 reg'8 A
 reg'8 B
 reg'8 PC
 reg'8 IR
 reg'1 CF
 
-// Constants
 const NOP = 0x0
 const LDA = 0x01
 const ADD = 0x02
@@ -24,16 +22,13 @@ const JC = 0x07
 const JZ = 0x08
 const OUT = 0x09
 
-// Startup block
 startup
     PC = 0
     A = 0
     B = 0
 end
 
-// On Rising Edge
-when CLK
-    // Fetch instruction
+when *
     IR = instruction
 
 	// Reset Outputs
