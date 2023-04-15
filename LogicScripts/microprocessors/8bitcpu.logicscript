@@ -1,18 +1,19 @@
-// Ports Declaration
+// [NAME] 8b CPU
+// [AUTOUPDATE]
 input'1 CLK
 input'8 instruction
 input'8 operand
-output'8 data_out
+input'1 RESET
 output'8 pc_out
+output'8 data_out
 
-// Registers
 reg'8 A
 reg'8 B
 reg'8 PC
 reg'8 IR
 reg'1 CF
+reg'1 lastCLK
 
-// Constants
 const NOP = 0x0
 const LDA = 0x01
 const ADD = 0x02
@@ -24,38 +25,40 @@ const JC = 0x07
 const JZ = 0x08
 const OUT = 0x09
 
-// Startup block
 startup
     PC = 0
     A = 0
     B = 0
 end
-
-// On Rising Edge
-when CLK
-    // Fetch instruction
-    IR = instruction
+when RESET
+	PC = 0
+	A = 0
+	B = 0
+	lastCLK = 0
+end
+when CLK & !lastCLK & !RESET
+    IR '= instruction
 
 	// Reset Outputs
-	data_out = 0b
-	pc_out = 0b
+	data_out '= 0b
+	pc_out '= 0b
 
     // Decode and execute instruction
-    if IR == LDA
+    if (IR == LDA)
         A '= operand
     end
 
     if (IR == ADD)
-		local $sum = A + operand
+		local $sum'9 = A + operand
 	
 		// Check for overflow
 		if ($sum > 0xFF)
-			CF = 1 
+			CF '= 1 
 		else
-			CF = 0
+			CF '= 0
 		end
 
-		A = ($sum)'8
+		A '= ($sum)'8
     end
 
     if (IR == SUB)
@@ -74,11 +77,11 @@ when CLK
         PC '= operand
     end
 
-    if (IR == JC & CF)
+    if ((IR == JC) & (CF == 1))
         PC '= operand
     end
 
-    if (IR == JZ & A == 0)
+    if ((IR == JZ) & (A == 0))
 		PC '= operand
     end
 
@@ -89,5 +92,7 @@ when CLK
     // Increment program counter
     PC '= PC + 1
 
-	pc_out = PC
+	pc_out '= PC - 1
 end
+
+assign lastCLK = CLK

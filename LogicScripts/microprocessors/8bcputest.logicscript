@@ -1,0 +1,46 @@
+// [NAME] 8b CPU PROBE
+// [AUTOUPDATE]
+// Ports Declaration
+input'1 CLK
+input'8 program_counter
+output'8 cpu_instruction
+output'8 cpu_operand
+
+reg'1 lastCLK
+
+// Constants
+const NOP = 0x0
+const LDA = 0x01
+const ADD = 0x02
+const SUB = 0x03
+const STA = 0x04
+const LDI = 0x05
+const JMP = 0x06
+const JC = 0x07
+const JZ = 0x08
+const OUT = 0x09
+
+
+// Falling edge detection
+when CLK & !lastCLK
+	cpu_instruction '= 0b
+	cpu_operand '= 0b
+	if (program_counter == 1)
+		cpu_instruction '= LDA
+		cpu_operand '= 15
+	end
+	if (program_counter == 2)
+		cpu_instruction '= ADD
+		cpu_operand '= 5
+	end
+	if (program_counter == 3)
+		cpu_instruction '= OUT
+		cpu_operand '= 0
+	end
+	if (program_counter == 4)
+		cpu_instruction '= JMP
+		cpu_operand '= 1
+	end
+end
+
+assign lastCLK = CLK
