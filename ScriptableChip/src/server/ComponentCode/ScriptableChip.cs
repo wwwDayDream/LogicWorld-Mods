@@ -150,7 +150,7 @@ namespace ScriptableChip.Server.ComponentCode
                         }
                     }
                 });
-                return (true, string.Empty, result.Script, autoUpdate, updateFreq);
+                return (true, string.Empty, result.Script, au, uf);
             }
         }
         public override void DeserializeNetworkedData(ref MemoryByteReader Reader)

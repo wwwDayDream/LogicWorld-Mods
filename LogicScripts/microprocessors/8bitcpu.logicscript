@@ -1,7 +1,9 @@
 // [NAME] 8b CPU
+// [AUTOUPDATE]
 input'1 CLK
 input'8 instruction
 input'8 operand
+input'1 RESET
 output'8 pc_out
 output'8 data_out
 
@@ -10,6 +12,7 @@ reg'8 B
 reg'8 PC
 reg'8 IR
 reg'1 CF
+reg'1 lastCLK
 
 const NOP = 0x0
 const LDA = 0x01
@@ -27,30 +30,35 @@ startup
     A = 0
     B = 0
 end
-
-when *
-    IR = instruction
+when RESET
+	PC = 0
+	A = 0
+	B = 0
+	lastCLK = 0
+end
+when CLK & !lastCLK & !RESET
+    IR '= instruction
 
 	// Reset Outputs
-	data_out = 0b
-	pc_out = 0b
+	data_out '= 0b
+	pc_out '= 0b
 
     // Decode and execute instruction
-    if IR == LDA
+    if (IR == LDA)
         A '= operand
     end
 
     if (IR == ADD)
-		local $sum = A + operand
+		local $sum'9 = A + operand
 	
 		// Check for overflow
 		if ($sum > 0xFF)
-			CF = 1 
+			CF '= 1 
 		else
-			CF = 0
+			CF '= 0
 		end
 
-		A = ($sum)'8
+		A '= ($sum)'8
     end
 
     if (IR == SUB)
@@ -69,11 +77,11 @@ when *
         PC '= operand
     end
 
-    if (IR == JC & CF)
+    if ((IR == JC) & (CF == 1))
         PC '= operand
     end
 
-    if (IR == JZ & A == 0)
+    if ((IR == JZ) & (A == 0))
 		PC '= operand
     end
 
@@ -84,5 +92,7 @@ when *
     // Increment program counter
     PC '= PC + 1
 
-	pc_out = PC
+	pc_out '= PC - 1
 end
+
+assign lastCLK = CLK
