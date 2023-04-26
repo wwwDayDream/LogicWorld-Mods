@@ -1,0 +1,153 @@
+// [NAME] 8b CPU v2
+// A fully reactive CPU
+input'1         IN_CLK
+input'1         IN_RESET
+input'8         IN_Instruction
+input'8         IN_Operand
+input'8         IN_BUS
+
+output'8        OUT_PC
+output'8        OUT_BUS
+output'3        MEM_RWA
+output'5        OUT_SERIAL
+
+reg'8           A
+reg'8           B
+reg'8           PC
+reg'4           MICRO_PC
+reg'8           FLAGS
+reg'1           LAST_CLK
+
+const NOP   =   0x00
+const LDA   =   0x01
+const LDB   =   0x02
+const LDIA  =   0x03
+const LDIB  =   0x04
+const ADD   =   0x05
+const SUB   =   0x06
+const ADDI  =   0x07
+const SUBI  =   0x08
+const JMP   =   0x09
+const JGT   =   0x0A
+const JLT   =   0x0B
+const JEQ   =   0x0C
+const JNEQ  =   0x0D
+const JC    =   0x0E
+const JZ    =   0x0F
+const OUT   =   0x10
+const OUTI  =   0x11
+const STA   =   0x12
+const STB   =   0x13
+const SER   =   0x14
+
+when (IN_CLK) & (!LAST_CLK)
+    local $stepPC'2 = 0
+    local $INS'8 = IN_Instruction
+
+    if ($INS == NOP)
+        $stepPC '= 1
+    else if (($INS == LDA) | ($INS == LDB))
+        if (MICRO_PC == 0)
+            OUT_BUS '= IN_Operand
+            MEM_RWA = 001b
+        else if (MICRO_PC == 1)
+            OUT_BUS '= 0
+            MEM_RWA = 100b
+        else if (MICRO_PC == 2)
+            if ($INS == LDA)
+                A '= IN_BUS
+            else
+                B '= IN_BUS
+            end
+            MEM_RWA = 000b
+            $stepPC '= 1
+        end
+    else if (($INS == LDIA) | ($INS == LDIB))
+        if ($INS == LDIA)
+            A '= IN_Operand
+        else
+            B '= IN_Operand
+        end
+        $stepPC '= 1
+    else if (($INS == ADD) | ($INS == ADDI))
+		local $sum'9 = A + ($INS == ADD ? B : IN_Operand)
+		if ($sum > 0xFF)
+            FLAGS '= FLAGS | 1b
+		else
+            FLAGS '= FLAGS & 0b
+		end
+        if ($sum == 0x0)
+            FLAGS '= FLAGS | 10b
+        else
+            FLAGS '= FLAGS & 01b
+        end
+		A '= ($sum)'8
+        $stepPC '= 1
+    else if (($INS == SUB) | ($INS == SUBI))
+        A '= A - ($INS == SUB ? B : IN_Operand)
+        $stepPC '= 1
+    else if (($INS == JMP) | ($INS == JGT) | ($INS == JLT) | ($INS == JEQ) | ($INS == JNEQ) | ($INS == JC) | ($INS == JZ))
+        local $canJump = (
+            $INS == JMP ? 1b : (
+                $INS == JGT ? (A > B) : (
+                    $INS == JLT ? (A < B) : (
+                        $INS == JEQ ? (A == B) : (
+                            $INS == JNEQ ? (A != B) : (
+                                $INS == JC ? (FLAGS & 1b) : (
+                                    $INS == JZ ? (FLAGS & 10b) : 0b)))))))
+        if ($canJump != 0b)
+            PC '= IN_Operand 
+            $stepPC '= 2
+        else
+            $stepPC '= 1
+        end
+    else if (($INS == OUT) | ($INS == OUTI))
+        local $outData'8 = ($INS == OUTI ? (IN_Operand) : (IN_Operand == 0b) ? A : B)
+        OUT_BUS '= $outData
+        $stepPC '= 1
+    else if (($INS == STA) | ($INS == STB))
+        if (MICRO_PC == 0)
+            OUT_BUS '= IN_Operand
+            MEM_RWA = 001b
+        else if (MICRO_PC == 1)
+            OUT_BUS '= (($INS == STA) ? A : B)
+            MEM_RWA = 010b
+        else if (MICRO_PC == 2)
+            OUT_BUS '= 0
+            MEM_RWA = 000b
+            $stepPC '= 1
+        end
+    else if ($INS == SER)
+        OUT_SERIAL '= IN_Operand
+        $stepPC '= 1
+    end
+
+    if ($stepPC == 2)
+        MICRO_PC = 0
+    else if ($stepPC == 1)
+        PC '= PC + 1
+        MICRO_PC = 0
+    else if ($stepPC == 0)
+        MICRO_PC '= MICRO_PC + 1
+    end
+    OUT_PC '= PC
+end
+
+when !IN_CLK & LAST_CLK
+    // OUT_BUS = 0
+end
+
+when IN_RESET
+    OUT_PC '= 0
+    OUT_BUS '= 0
+    MEM_RWA '= 0
+    OUT_SERIAL '= 0
+    A '= 0
+    B '= 0
+    PC '= 0
+    MICRO_PC '= 0
+    FLAGS '= 0
+end
+when *
+    LAST_CLK = IN_CLK
+end

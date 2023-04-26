@@ -5,16 +5,21 @@ using LogicAPI.Data;
 using LogicAPI.Server.Components;
 using LogicScript;
 using LogicScript.Data;
+using LogicScript.Interpreting;
 using LogicScript.Parsing;
 using LogicWorld.SharedCode.BinaryStuff;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Net.Security;
 using System.Reflection;
+using System.Reflection.PortableExecutable;
 using System.Text;
 using UnityEngine;
 
-namespace ScriptableChip.Server.ComponentCode
+namespace SChipz.Server.ComponentCode
 {
     public class ScriptableChip : ResizableChip, IUpdatableMachine, IMachine
     {
@@ -23,16 +28,14 @@ namespace ScriptableChip.Server.ComponentCode
         public string CurrentScript { get => currentScript; set { currentScript = value; QueueNetworkedDataUpdate(); } }
         public string PendingScript { get => pendingScript; set { pendingScript = value; QueueNetworkedDataUpdate(); } }
         public string PendingSciptErrors { get => pendingScriptErrors; set { pendingScriptErrors = value; QueueNetworkedDataUpdate(); } }
-        public ComponentAddress LinkedLabel { get => linkedLabel; set { linkedLabel = value; QueueNetworkedDataUpdate(); } }
         public string LinkedFile { get => linkedFile; set { linkedFile = value; QueueNetworkedDataUpdate(); } }
+        public ulong[] Registers = Array.Empty<ulong>();
         #endregion
         #region Private Variables 
         private string currentScript = string.Empty;
         private string pendingScript = string.Empty;
         private string pendingScriptErrors = string.Empty;
-        private ComponentAddress linkedLabel = ComponentAddress.Null;
         private string linkedFile = string.Empty;
-        private ulong[] registers = Array.Empty<ulong>();
         #endregion
 
         int IMachine.InputCount => Inputs.Count;
@@ -43,12 +46,35 @@ namespace ScriptableChip.Server.ComponentCode
         internal int updateCount = 1;
         internal bool hasRunStartup = false;
         internal Script compiledScript = new Script();
+        internal bool IOCountLocked = false;
         protected override void DoLogicUpdate()
         {
+            if (IOCountLocked)
+                return;
             if (!autoUpdate || (autoUpdate && (updateCount % updateFreq == 0)))
             {
+                PropertyInfo InputCountProp = typeof(Script).GetProperty("RegisteredInputLength", BindingFlags.Instance | BindingFlags.NonPublic);
+                PropertyInfo OutputCountProp = typeof(Script).GetProperty("RegisteredOutputLength", BindingFlags.Instance | BindingFlags.NonPublic);
+                int InputCount = int.MaxValue;
+                int OutputCount = int.MaxValue;
+                if (InputCountProp != null && OutputCountProp != null)
+                {
+                    InputCount = (int)(InputCountProp.GetValue(compiledScript) ?? 9999999);
+                    OutputCount = (int)(OutputCountProp.GetValue(compiledScript) ?? 9999999);
+                }
+                if (Inputs.Count < InputCount)
+                    LConsole.WriteLine($"Input length mismatch: Script requires {InputCount} but ScriptableChip has {Inputs.Count}");
+                if (Outputs.Count < OutputCount)
+                    LConsole.WriteLine($"Output length mismatch: Script requires {OutputCount} but ScriptableChip has {Outputs.Count}");
+                if (Inputs.Count < InputCount || Outputs.Count < OutputCount)
+                {
+                    IOCountLocked = true;
+                    return;
+                }
+
                 compiledScript.Run(this, !hasRunStartup, false);
                 if (!hasRunStartup) hasRunStartup = true;
+
             }
             if (!autoUpdate) return;
             updateCount++;
@@ -73,9 +99,9 @@ namespace ScriptableChip.Server.ComponentCode
         #region Implement IMachine
         void IMachine.AllocateRegisters(int count)
         {
-            if (registers.Length != count)
+            if (Registers.Length != count)
             {
-                Array.Resize(ref registers, count * 64);
+                Array.Resize(ref Registers, count * 64);
             }
         }
         void IMachine.Print(string msg)
@@ -94,7 +120,7 @@ namespace ScriptableChip.Server.ComponentCode
         }
         BitsValue IMachine.ReadRegister(int index)
         {
-            return new BitsValue(registers[index]);
+            return new BitsValue(Registers[index]);
         }
         void IMachine.WriteOutput(int startIndex, Span<bool> value)
         {
@@ -105,8 +131,8 @@ namespace ScriptableChip.Server.ComponentCode
         }
         void IMachine.WriteRegister(int index, BitsValue value)
         {
-            registers[index] = value.Number;
-            QueueNetworkedDataUpdate();
+            Registers[index] = value.Number;
+            // QueueNetworkedDataUpdate();
         }
         void IUpdatableMachine.QueueUpdate()
         {
@@ -115,7 +141,7 @@ namespace ScriptableChip.Server.ComponentCode
         #endregion
 
         #region Data Management
-        public (bool success, string error, Script script, bool AutoUpdate, int updateFreq) TryCompileScript(string script)
+        public (bool success, string error) TryCompileScript(string script)
         {
             (bool Succeeded, IReadOnlyList<Error> Errors, Script Script) result = TryInterpretScript(script);
             if (!result.Succeeded)
@@ -128,7 +154,7 @@ namespace ScriptableChip.Server.ComponentCode
                     stringBuilder.AppendLine($"// Error: {error.Severity}, Message: {error.Message}");
                 }
 
-                return (false, stringBuilder.ToString(), null, false, 1);
+                return (false, stringBuilder.ToString());
             }
             else
             {
@@ -150,7 +176,13 @@ namespace ScriptableChip.Server.ComponentCode
                         }
                     }
                 });
-                return (true, string.Empty, result.Script, au, uf);
+
+                currentScript = script;
+                compiledScript = result.Script;
+                autoUpdate = au;
+                updateFreq = uf;
+
+                return (true, string.Empty);
             }
         }
         public override void DeserializeNetworkedData(ref MemoryByteReader Reader)
@@ -160,13 +192,9 @@ namespace ScriptableChip.Server.ComponentCode
             string suggestedCurrentScript = Reader.ReadString();
             if (suggestedCurrentScript != string.Empty && suggestedCurrentScript != currentScript)
             {
-                (bool success, string error, Script script, bool AutoUpdate, int _updateFreq) = TryCompileScript(suggestedCurrentScript);
+                (bool success, string error) = TryCompileScript(suggestedCurrentScript);
                 if (success)
                 {
-                    currentScript = suggestedCurrentScript;
-                    compiledScript = script;
-                    autoUpdate = AutoUpdate;
-                    updateFreq = _updateFreq;
                     hasRunStartup = true;
 
                     QueueLogicUpdate();
@@ -176,15 +204,13 @@ namespace ScriptableChip.Server.ComponentCode
             }
             pendingScript = Reader.ReadString();
             pendingScriptErrors = Reader.ReadString();
-            linkedLabel = Reader.ReadComponentAddress();
             linkedFile = Reader.ReadString();
 
             int RegisterCount = Reader.ReadInt32();
-            registers = RegisterCount == 0 ? Array.Empty<ulong>() : new ulong[RegisterCount];
-            if (RegisterCount == 0) return;
+            Registers = RegisterCount == 0 ? Array.Empty<ulong>() : new ulong[RegisterCount];
             for (int i = 0; i < RegisterCount; i++)
             {
-                registers[i] = Reader.ReadUInt64();
+                Registers[i] = Reader.ReadUInt64();
             }
         }
         public override void SerializeNetworkedData(ref ByteWriter Writer)
@@ -194,11 +220,9 @@ namespace ScriptableChip.Server.ComponentCode
             Writer.Write(currentScript);
             Writer.Write(pendingScript);
             Writer.Write(pendingScriptErrors);
-            Writer.Write(linkedLabel);
             Writer.Write(linkedFile);
-            Writer.Write(registers.Length);
-            if (registers.Length == 0) return;
-            foreach (ulong register in registers)
+            Writer.Write(Registers.Length);
+            foreach (ulong register in Registers)
             {
                 Writer.Write(register);
             }
@@ -210,33 +234,31 @@ namespace ScriptableChip.Server.ComponentCode
             currentScript = string.Empty;
             pendingScript = string.Empty;
             pendingScriptErrors = string.Empty;
-            linkedLabel = ComponentAddress.Null;
             linkedFile = string.Empty;
-            registers = Array.Empty<ulong>();
+            Registers = Array.Empty<ulong>();
         }
         protected override void OnCustomDataUpdated()
         {
             if (pendingScript != string.Empty)
             {
-                (bool success, string error, Script script, bool AutoUpdate, int UpdateFreq) = TryCompileScript(pendingScript);
+                (bool success, string error) = TryCompileScript(pendingScript);
 
-                if (!success)
+                if (success)
                 {
-                    pendingScriptErrors = error;
-                }
-                else
-                {
-                    currentScript = pendingScript;
-                    compiledScript = script;
-                    autoUpdate = AutoUpdate;
-                    updateFreq = UpdateFreq;
                     hasRunStartup = false;
 
                     QueueLogicUpdate();
                 }
+                else
+                    pendingScriptErrors = error;
 
                 pendingScript = string.Empty;
                 QueueNetworkedDataUpdate();
+            }
+            if (IOCountLocked)
+            {
+                IOCountLocked = false;
+                QueueLogicUpdate();
             }
         }
         #endregion

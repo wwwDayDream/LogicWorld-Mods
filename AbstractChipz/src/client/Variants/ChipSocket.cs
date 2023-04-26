@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace Chipz.Variants
 {
-    public class ChipSocketVariantInfo : DynamicChipVariantInfo
+    public class ChipSocket : DynamicChip
     {
         public override Color24 ChipColor => Color24.LightGray;
 

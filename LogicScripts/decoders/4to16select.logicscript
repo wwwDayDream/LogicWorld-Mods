@@ -1,0 +1,88 @@
+// [NAME] 4b->16 Choice
+input'4 Choice
+output'1 Sel_0
+output'1 Sel_1
+output'1 Sel_2
+output'1 Sel_3
+output'1 Sel_4
+output'1 Sel_5
+output'1 Sel_6
+output'1 Sel_7
+output'1 Sel_8
+output'1 Sel_9
+output'1 Sel_A
+output'1 Sel_B
+output'1 Sel_C
+output'1 Sel_D
+output'1 Sel_E
+output'1 Sel_F
+
+when *
+    local $temp_Sel_0'1 = 0
+    local $temp_Sel_1'1 = 0
+    local $temp_Sel_2'1 = 0
+    local $temp_Sel_3'1 = 0
+    local $temp_Sel_4'1 = 0
+    local $temp_Sel_5'1 = 0
+    local $temp_Sel_6'1 = 0
+    local $temp_Sel_7'1 = 0
+    local $temp_Sel_8'1 = 0
+    local $temp_Sel_9'1 = 0
+    local $temp_Sel_A'1 = 0
+    local $temp_Sel_B'1 = 0
+    local $temp_Sel_C'1 = 0
+    local $temp_Sel_D'1 = 0
+    local $temp_Sel_E'1 = 0
+    local $temp_Sel_F'1 = 0
+
+    if (Choice == 0x0)
+        $temp_Sel_0 '= 1b            
+    else if (Choice == 0x1)
+        $temp_Sel_1 '= 1b            
+    else if (Choice == 0x2)
+        $temp_Sel_2 '= 1b        
+    else if (Choice == 0x3)
+        $temp_Sel_3 '= 1b        
+    else if (Choice == 0x4)
+        $temp_Sel_4 '= 1b        
+    else if (Choice == 0x5)
+        $temp_Sel_5 '= 1b        
+    else if (Choice == 0x6)
+        $temp_Sel_6 '= 1b        
+    else if (Choice == 0x7)
+        $temp_Sel_7 '= 1b        
+    else if (Choice == 0x8)
+        $temp_Sel_8 '= 1b        
+    else if (Choice == 0x9)
+        $temp_Sel_9 '= 1b        
+    else if (Choice == 0xA)
+        $temp_Sel_A '= 1b        
+    else if (Choice == 0xB)
+        $temp_Sel_B '= 1b        
+    else if (Choice == 0xC)
+        $temp_Sel_C '= 1b        
+    else if (Choice == 0xD)
+        $temp_Sel_D '= 1b        
+    else if (Choice == 0xE)
+        $temp_Sel_E '= 1b        
+    else if (Choice == 0xF)
+        $temp_Sel_F '= 1b        
+    end
+
+    Sel_0 '= $temp_Sel_0
+    Sel_1 '= $temp_Sel_1
+    Sel_2 '= $temp_Sel_2
+    Sel_3 '= $temp_Sel_3
+    Sel_4 '= $temp_Sel_4
+    Sel_5 '= $temp_Sel_5
+    Sel_6 '= $temp_Sel_6
+    Sel_7 '= $temp_Sel_7
+    Sel_8 '= $temp_Sel_8
+    Sel_9 '= $temp_Sel_9
+    Sel_A '= $temp_Sel_A
+    Sel_B '= $temp_Sel_B
+    Sel_C '= $temp_Sel_C
+    Sel_D '= $temp_Sel_D
+    Sel_E '= $temp_Sel_E
+    Sel_F '= $temp_Sel_F
+end

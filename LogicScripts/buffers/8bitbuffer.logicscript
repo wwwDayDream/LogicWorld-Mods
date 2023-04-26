@@ -1,0 +1,13 @@
+// [NAME] 8b Buffer
+input'1 PASS
+input'8 IN_DATA
+
+output'8 OUT_DATA
+
+when *
+    if (PASS)
+        OUT_DATA '= IN_DATA
+    else
+        OUT_DATA '= 0
+    end
+end

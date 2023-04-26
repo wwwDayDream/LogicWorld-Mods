@@ -6,12 +6,8 @@ using System.Reflection;
 
 namespace Chipz.Server.ComponentCode
 {
-    public abstract class NetworkedDynamicChip : LogicComponent
+    public abstract class NetworkedDynamicChip : DynamicChip
     {
-        #region Public Variables
-        public IWorldMutationManager worldMutationManager => (IWorldMutationManager)((typeof(LogicComponent).GetField("WorldMutationManager", BindingFlags.Instance | BindingFlags.NonPublic) ?? throw new NullReferenceException()).GetValue(this) ?? throw new NullReferenceException());
-        #endregion
-
         #region Overrides
         public void QueueNetworkedDataUpdate()
         {

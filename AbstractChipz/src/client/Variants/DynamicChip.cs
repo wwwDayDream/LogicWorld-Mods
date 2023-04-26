@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace Chipz.Variants
 {
-    public abstract class DynamicChipVariantInfo : PrefabVariantInfo
+    public abstract class DynamicChip : PrefabVariantInfo
     {
         #region Internal Variables
         internal static Color24 _fakePinColor = new Color24(25, 23, 23);

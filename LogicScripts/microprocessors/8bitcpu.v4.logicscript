@@ -1,0 +1,443 @@
+// [NAME] 8b CPU v4
+// A fully reactive CPU & we're reverting to max input/output size.
+input'1         IN_CLK
+input'1         IN_RESET
+input'8         IN_INSTRUCTION
+input'8         IN_OPERAND
+input'8         IN_RAM_DATA
+input'16        IN_SERIAL
+input'1         IN_INTERRUPT
+input'1         IN_RELEASE
+
+output'1        OUT_RAM_WRITE
+output'8        OUT_PROM
+output'8        OUT_RAM_ADDRESS
+output'8        OUT_RAM_DATA
+output'16       OUT_SERIAL
+
+reg'8           A
+reg'8           B
+reg'8           PC
+reg'4           MICRO_PC
+reg'8           FLAGS
+reg'1           LAST_CLK
+reg'64          RET_LOC_0
+reg'64          RET_LOC_1
+reg'5           CALLS_COUNT
+reg'64          CALL_ARGS_0_7
+reg'64          CALL_ARGS_8_15
+reg'64          STACK
+reg'16          SERIAL
+reg'9           INT_ADDRESS
+reg'2           PROCESSING_STATE
+
+const NORMAL      = 00b
+const HALTED      = 01b
+const SKIPP       = 10b
+const INTERRUPTED = 11b
+
+const NOP     = 0x00
+const LDA     = 0x01
+const LDB     = 0x02
+const LDIA    = 0x03
+const LDIB    = 0x04
+const ADD     = 0x05
+const SUB     = 0x06
+const LDSLA   = 0x07
+const LDSLB   = 0x08
+const JMP     = 0x09
+const JGT     = 0x0A
+const JLT     = 0x0B
+const JEQ     = 0x0C
+const JNEQ    = 0x0D
+const JC      = 0x0E
+const JZ      = 0x0F
+const HLT     = 0x10
+const INT     = 0x11
+const STA     = 0x12
+const STB     = 0x13
+const AND     = 0x14
+const OR      = 0x15
+const XOR     = 0x16
+const NOT     = 0x17
+const ANDI    = 0x18
+const ORI     = 0x19
+const XORI    = 0x1A
+const CALL    = 0x1B
+const RET     = 0x1C
+const PUSH    = 0x1D
+const POPA    = 0x1E
+const POPB    = 0x1F
+const PUSHA   = 0x20
+const PUSHB   = 0x21
+const LDSHA   = 0x22
+const LDSHB   = 0x23
+const INCA    = 0x24
+const INCB    = 0x25
+const DECA    = 0x26
+const DECB    = 0x27
+const ROLA    = 0x28
+const ROLB    = 0x29
+const RORA    = 0x2A
+const RORB    = 0x2B
+const LSHFTA  = 0x2C
+const LSHFTB  = 0x2D
+const RSHFTA  = 0x2E
+const RSHFTB  = 0x2F
+const SERLI   = 0x30
+const SERHI   = 0x31
+const SERLA   = 0x32
+const SERLB   = 0x33
+const SERHA   = 0x34
+const SERHB   = 0x35
+const STBWA   = 0x36
+const STIWA   = 0x37
+const MUL     = 0x38
+const DIV     = 0x39
+const MULA    = 0x3A
+const MULB    = 0x3B
+const DIVA    = 0x3C
+const DIVB    = 0x3D
+const LDBWA   = 0x3E
+
+const STARGI0  = 0xB0
+// ...
+const STARGI15 = 0xBF
+const STARGA0  = 0xC0
+// ...
+const STARGA15 = 0xCF
+const STARGB0  = 0xD0
+// ...
+const STARGB15 = 0xDF
+const LDARGA0  = 0xE0
+// ...
+const LDARGA15 = 0xEF
+const LDARGB0  = 0xF0
+// ...
+const LDARGB15 = 0xFF
+
+const ALL_ONES = 1111111111111111111111111111111111111111111111111111111111111111b
+when (IN_CLK) & (!LAST_CLK) & (IN_RELEASE)
+    if (PROCESSING_STATE == HALTED)
+        PROCESSING_STATE = NORMAL
+    end
+end
+when (IN_CLK) & (!LAST_CLK) & (IN_INTERRUPT) & (PROCESSING_STATE != INTERRUPTED) & ((INT_ADDRESS >> 8) == 1)
+    PROCESSING_STATE = INTERRUPTED
+
+    local $shiftTrailFromRET'8 = (RET_LOC_0 >> 56)'8
+    RET_LOC_1 '= ((RET_LOC_1 << 8) | $shiftTrailFromRET)
+    RET_LOC_0 '= ((RET_LOC_0 << 8) | PC - 1)
+
+    PC '= INT_ADDRESS
+    OUT_PROM '= PC
+    CALLS_COUNT '= CALLS_COUNT + 1
+end
+when (IN_CLK) & (!LAST_CLK) & (PROCESSING_STATE == SKIPP)
+    if (IN_INSTRUCTION == RET)
+        PROCESSING_STATE = NORMAL
+    end
+    PC '= PC + 1
+    OUT_PROM '= PC
+end
+when (IN_CLK) & (!LAST_CLK) & ((PROCESSING_STATE == NORMAL) | (PROCESSING_STATE == INTERRUPTED)) & (((INT_ADDRESS >> 8) == 1) ? !IN_INTERRUPT : 1)
+    local $stepPC'2 = 0
+
+    local $MICRO_STEP'4 = MICRO_PC
+    local $INS'8 = IN_INSTRUCTION
+    local $OP'8 = IN_OPERAND
+    local $INS_ARG_TYPE'8 = (IN_INSTRUCTION & 0xF0)
+    local $INS_ARG_NUM'4 = (IN_INSTRUCTION & 0x0F)'4
+    if (($INS == LDA) | ($INS == LDB))
+        if ($MICRO_STEP == 0)
+            OUT_RAM_ADDRESS = $OP
+        else if ($MICRO_STEP == 1)
+            if ($INS == LDA)
+                A '= IN_RAM_DATA
+            else
+                B '= IN_RAM_DATA
+            end
+            OUT_RAM_ADDRESS '= 0
+            $stepPC '= 1
+        end
+    else if (($INS == LDIA) | ($INS == LDIB))
+        if ($INS == LDIA)
+            A '= $OP
+        else
+            B '= $OP
+        end
+        $stepPC '= 1
+    else if (($INS == ADD))
+        local $sum'9 = A + B
+        if ($sum > 0xFF)
+            FLAGS '= FLAGS | 1b
+        else
+            FLAGS '= FLAGS & 0b
+        end
+        if ($sum == 0x0)
+            FLAGS '= FLAGS | 10b
+        else
+            FLAGS '= FLAGS & 01b
+        end
+        A '= ($sum)'8
+        $stepPC '= 1
+    else if (($INS == SUB))
+        A '= A - B
+        $stepPC '= 1
+    else if (($INS == MUL))
+        A '= A * B
+        $stepPC '= 1
+    else if (($INS == DIV))
+        A '= A / B
+        $stepPC '= 1
+    else if (($INS == MULA) | ($INS == MULB))
+        if ($INS == MULA)
+            A '= A * $OP
+        else
+            B '= B * $OP
+        end
+        $stepPC '= 1
+    else if (($INS == DIVA) | ($INS == DIVB))
+        if ($INS == DIVA)
+            A '= A / $OP
+        else
+            B '= B / $OP
+        end
+        $stepPC '= 1
+    else if (($INS == JMP) | ($INS == JGT) | ($INS == JLT) | ($INS == JEQ) | ($INS == JNEQ) | ($INS == JC) | ($INS == JZ))
+        local $canJump = (
+            ($INS == JMP) ? (1b) : (
+                ($INS == JGT) ? (A > B) : (
+                    ($INS == JLT) ? (A < B) : (
+                        ($INS == JEQ) ? (A == B) : (
+                            ($INS == JNEQ) ? (A != B) : (
+                                ($INS == JC) ? (FLAGS & 1b) : (
+                                    ($INS == JZ) ? (FLAGS & 10b) : (0b))))))))
+        if ($canJump)
+            PC '= $OP 
+            $stepPC '= 2
+        else
+            $stepPC '= 1
+        end
+    else if (($INS == LDSLA) | ($INS == LDSLB) | ($INS == LDSHA) | ($INS == LDSHB))
+        local $serialChunkMask'16 = (($INS == LDSLA) | ($INS == LDSLB) ? 0xFF : 0xFF00)
+        local $dataToLoad'8 = ((IN_SERIAL & $serialChunkMask) >> ($serialChunkMask > 0xFF ? 8 : 0))'8
+        if (($INS == LDSLA) | ($INS == LDSHA))
+            A '= $dataToLoad
+        else
+            B '= $dataToLoad
+        end
+        $stepPC '= 1
+    else if (($INS == SERLI) | ($INS == SERHI) | ($INS == SERLA) | ($INS == SERHA) | ($INS == SERLB) | ($INS == SERHB))
+        local $dataToOutput'16 = (
+            (($INS == SERLI) | ($INS == SERHI)) ? $OP : (
+                (($INS == SERLA) | ($INS == SERHA) ? A : B)))
+        if (($INS == SERHI) | ($INS == SERHA) | ($INS == SERHB))
+            $dataToOutput '= $dataToOutput << 8
+            $dataToOutput '= $dataToOutput | (SERIAL & (0xFF))
+        else
+            $dataToOutput '= ($dataToOutput | (SERIAL & (0xFF00)))
+        end
+        OUT_SERIAL '= $dataToOutput
+        SERIAL '= $dataToOutput
+        $stepPC '= 1
+    else if (($INS == STA) | ($INS == STB) | ($INS == STBWA) | ($INS == STIWA))
+        if ($MICRO_STEP == 0)
+            OUT_RAM_ADDRESS '= (($INS == STBWA) ? A : $OP)
+            OUT_RAM_DATA '= ((($INS == STIWA)) ? $OP : (($INS == STA) ? A : B))
+            OUT_RAM_WRITE '= 1
+        else if ($MICRO_STEP == 1)
+            OUT_RAM_ADDRESS '= 0
+            OUT_RAM_DATA '= 0
+            OUT_RAM_WRITE '= 0
+            $stepPC '= 1
+        end
+    else if (($INS == AND) | ($INS == OR) | ($INS == XOR) | ($INS == NOT))
+        local $bitResult'8 = (
+            ($INS == AND) ? (A & B) : (
+                ($INS == OR) ? (A | B) : (
+                    ($INS == XOR) ? (A ^ B) : (
+                        ($INS == NOT) ? (!A) : (0b)))))
+        A '= $bitResult
+        $stepPC '= 1
+    else if (($INS == ANDI) | ($INS == ORI) | ($INS == XORI))
+        local $bitIResult'8 = (
+            ($INS == ANDI) ? (A & $OP) : (
+                ($INS == ORI) ? (A | $OP) : (
+                    ($INS == XORI) ? (A ^ $OP) : (0b))))
+        A '= $bitIResult
+        $stepPC '= 1
+    else if (($INS == CALL))
+        // Always keep 1 slot for the interrupt, allowing 15 nested calls
+        if (CALLS_COUNT < 15)
+            local $shiftTrail0'8 = (RET_LOC_0 >> 56)'8
+            RET_LOC_1 '= ((RET_LOC_1 << 8) | $shiftTrail0)
+            RET_LOC_0 '= ((RET_LOC_0 << 8) | PC)
+            PC '= $OP
+            $stepPC '= 2
+            CALLS_COUNT '= CALLS_COUNT + 1
+        else
+            $stepPC '= 1
+        end
+    else if (($INS == RET))
+        if (CALLS_COUNT > 0)
+            local $retVal'8 = (RET_LOC_0 & 0xFF)'8
+            local $shiftTrail1'64 = ((RET_LOC_1 & 0xFF) << 56)'64
+            RET_LOC_0 '= ((RET_LOC_0 >> 8) | $shiftTrail1)
+            RET_LOC_1 '= RET_LOC_1 >> 8
+            PC '= $retVal
+            CALLS_COUNT '= CALLS_COUNT - 1
+        end
+        if (PROCESSING_STATE == INTERRUPTED)
+            PROCESSING_STATE = NORMAL
+        end
+        $stepPC '= 1
+    else if (($INS == PUSH) | ($INS == PUSHA) | ($INS == PUSHB))
+        local $valToPush = (
+            ($INS == PUSH) ? ($OP) : (
+                ($INS == PUSHA) ? (A) : (B)))
+        STACK '= STACK << 8
+        STACK '= STACK | $valToPush
+        $stepPC '= 1
+    else if (($INS == POPA) | ($INS == POPB))
+        local $valFromStack'8 = (STACK & 0xFF)'8
+        STACK '= STACK >> 8
+        if ($INS == POPA)
+            A '= $valFromStack
+        else
+            B '= $valFromStack
+        end
+        $stepPC '= 1
+    else if (($INS == LSHFTA) | ($INS == LSHFTB) | ($INS == RSHFTA) | ($INS == RSHFTB))
+        local $valToShift'8 = (($INS == LSHFTA) | ($INS == RSHFTA) ? A : B)
+        local $valShifted'8 = ((($INS == LSHFTA) | ($INS == LSHFTB)) ? $valToShift << $OP : $valToShift >> $OP)'8
+        if (($INS == LSHFTA) | ($INS == RSHFTA))
+            A '= $valShifted
+        else
+            B '= $valShifted
+        end
+        $stepPC '= 1
+    else if (($INS == INCA) | ($INS == INCB))
+        if ($INS == INCA)
+            A '= A + $OP
+        else
+            B '= B + $OP
+        end
+        $stepPC '= 1
+    else if (($INS == DECA) | ($INS == DECB))
+        if ($INS == DECA)
+            A '= A - $OP
+        else
+            B '= B - $OP
+        end
+        $stepPC '= 1
+    else if (($INS == ROLA) | ($INS == ROLB))
+        local $valToROTLeft'8 = (($INS == ROLA) ? A : B)
+        for $i to $OP
+            local $bitToInjectLeft'1 = ($valToROTLeft >> 7)'1
+            $valToROTLeft '= $valToROTLeft << 1
+            $valToROTLeft '= $valToROTLeft | $bitToInjectLeft
+        end
+        if ($INS == ROLA)
+            A '= $valToROTLeft
+        else
+            B '= $valToROTLeft
+        end
+        $stepPC '= 1
+    else if (($INS == RORA) | ($INS == RORB))
+        local $valToROTRight'8 = (($INS == RORA) ? A : B)
+        for $i to $OP
+            local $bitToInjectRight'8 = ($valToROTRight << 7)'1
+            $valToROTRight '= $valToROTRight >> 1
+            $valToROTRight '= $valToROTRight | $bitToInjectRight
+        end
+        if ($INS == RORA)
+            A '= $valToROTRight
+        else
+            B '= $valToROTRight
+        end
+        $stepPC '= 1
+    else if (($INS_ARG_TYPE == STARGA0) | (($INS_ARG_TYPE == STARGB0)) | ($INS_ARG_TYPE == STARGI0))
+        local $argSource'8 = (
+            ($INS_ARG_TYPE == STARGI0) ? ($OP) : (
+                ($INS_ARG_TYPE == STARGA0) ? (A) : (B)))
+        local $argSourceShifted'64 = ($argSource << (($INS_ARG_NUM * 8) % 64))'64
+        local $callArgsMask'64 = ((ALL_ONES) ^ (((ALL_ONES)'8) << (($INS_ARG_NUM * 8) % 64)))'64
+        if ($INS_ARG_NUM < 8)
+            CALL_ARGS_0_7 '= (CALL_ARGS_0_7 & $callArgsMask)
+            CALL_ARGS_0_7 '= (CALL_ARGS_0_7 | $argSourceShifted)
+        else
+            CALL_ARGS_8_15 '= (CALL_ARGS_8_15 & $callArgsMask)
+            CALL_ARGS_8_15 '= (CALL_ARGS_8_15 | $argSourceShifted)
+        end
+        $stepPC '= 1
+    else if (($INS_ARG_TYPE == LDARGA0) | (($INS_ARG_TYPE == LDARGB0)))
+        local $dataToArg'64
+        if ($INS_ARG_NUM < 8)
+            $dataToArg = (CALL_ARGS_0_7 >> (($INS_ARG_NUM * 8) % 64))
+        else
+            $dataToArg = (CALL_ARGS_8_15 >> (($INS_ARG_NUM * 8) % 64))
+        end
+        if (($INS_ARG_TYPE == LDARGA0))
+            A '= $dataToArg
+        else
+            B '= $dataToArg
+        end
+        $stepPC '= 1
+    else if (($INS == HLT))
+        PROCESSING_STATE = HALTED
+        $stepPC '= 1
+    else if (($INS == INT))
+        INT_ADDRESS '= PC + 0x101
+        PROCESSING_STATE = SKIPP
+        $stepPC '= 1
+    else if (($INS == LDBWA))
+        if ($MICRO_STEP == 0)
+            OUT_RAM_ADDRESS = A
+        else if ($MICRO_STEP == 1)
+            B '= IN_RAM_DATA
+            OUT_RAM_ADDRESS '= 0
+            $stepPC '= 1
+        end
+    else
+        // NOP
+        $stepPC '= 1
+    end
+
+    if ($stepPC == 2)
+        MICRO_PC '= 0
+    else if ($stepPC == 1)
+        PC '= PC + 1
+        MICRO_PC '= 0
+    else if ($stepPC == 0)
+        MICRO_PC '= MICRO_PC + 1
+    end
+
+    OUT_PROM '= PC
+end
+
+when IN_RESET
+    OUT_RAM_WRITE '= 0
+    OUT_PROM '= 0
+    OUT_RAM_ADDRESS '= 0
+    OUT_RAM_DATA '= 0
+    OUT_SERIAL '= 0
+    A '= 0
+    B '= 0
+    PC '= 0
+    MICRO_PC '= 0
+    FLAGS '= 0
+    LAST_CLK '= 0
+    RET_LOC_0 '= 0
+    RET_LOC_1 '= 0
+    CALLS_COUNT '= 0
+    CALL_ARGS_0_7 '= 0
+    CALL_ARGS_8_15 '= 0
+    STACK '= 0
+    SERIAL '= 0
+    INT_ADDRESS '= 0
+    PROCESSING_STATE '= 0
+end
+when *
+    LAST_CLK = IN_CLK
+end
