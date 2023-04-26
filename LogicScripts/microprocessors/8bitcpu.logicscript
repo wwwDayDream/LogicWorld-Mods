@@ -35,19 +35,20 @@ when RESET
 	A = 0
 	B = 0
 	lastCLK = 0
+	data_out '= 0b
+	pc_out '= 0b
 end
 when CLK & !lastCLK & !RESET
     IR '= instruction
 
 	// Reset Outputs
-	data_out '= 0b
+	// data_out '= 0b
 	pc_out '= 0b
 
     // Decode and execute instruction
     if (IR == LDA)
         A '= operand
     end
-
     if (IR == ADD)
 		local $sum'9 = A + operand
 	
@@ -60,31 +61,24 @@ when CLK & !lastCLK & !RESET
 
 		A '= ($sum)'8
     end
-
     if (IR == SUB)
         A '= A - operand
     end
-
     if (IR == STA)
         data_out '= A
     end
-
     if (IR == LDI)
         B '= operand
     end
-
     if (IR == JMP)
         PC '= operand
     end
-
     if ((IR == JC) & (CF == 1))
         PC '= operand
     end
-
     if ((IR == JZ) & (A == 0))
 		PC '= operand
     end
-
     if (IR == OUT)
         data_out '= A
     end

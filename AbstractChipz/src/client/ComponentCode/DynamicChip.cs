@@ -9,6 +9,7 @@ using LogicWorld.Interfaces.Building;
 using LogicWorld.References;
 using LogicWorld.Rendering.Chunks;
 using LogicWorld.Rendering.Components;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
@@ -86,7 +87,7 @@ namespace Chipz.Client.ComponentCode
         /// <returns></returns>
         public static GameObject CreateTextLabel(DataObj data)
         {
-            GameObject GO = Object.Instantiate(Prefabs.ComponentDecorations.LabelText);
+            GameObject GO = UnityEngine.Object.Instantiate(Prefabs.ComponentDecorations.LabelText);
             GO.GetComponent<LabelTextManager>().DataUpdate(data);
             return GO;
         }
@@ -137,12 +138,15 @@ namespace Chipz.Client.ComponentCode
         {
             return GetBlockEntity(0).Color;
         }
+        public virtual void OnRequestPinCountChange(int SizeX, int SizeZ) { }
         public void RequestPinCountChange(int SizeX, int SizeZ)
         {
             // This is where we need to change our pin count!
             BuildRequestManager.SendBuildRequestWithoutAddingToUndoStack(new BuildRequest_ChangeDynamicComponentPegCounts(Address, SizeX, SizeZ));
             // We also need to make our placements dirty, so we recalculate those
             MarkChildPlacementInfoDirty();
+
+            OnRequestPinCountChange(SizeX, SizeZ);
         }
         public void QueueChipTitleUpdate(string hintText = "")
         {

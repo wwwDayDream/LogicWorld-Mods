@@ -1,0 +1,82 @@
+// [NAME] TTT Manager
+input'1 IN_RESET
+input'1 IN_TriggerSelect
+input'1 IN_Player
+input'4 IN_Selection
+
+reg'18 CELLS
+reg'1 IS_WON
+
+output'1 OUT_Selected
+output'1 OUT_CellWon
+output'18 OUT_CELLS
+output'1 OUT_SUCCESS
+
+const ALL_ONES = (1111111111111111111111111111111111111111111111111111111111111111b)
+
+when (IN_RESET)
+    OUT_Selected '= 0
+    OUT_CellWon '= 0
+    OUT_CELLS '= 0
+    IS_WON '= 0
+    CELLS '= 0
+end
+
+when (IN_TriggerSelect) & !(IS_WON)
+    local $position = ((8 - IN_Selection) * 2)
+    if ((CELLS >> $position)'2 == 00b)
+        OUT_SUCCESS '= 1b
+        CELLS '= (CELLS & (ALL_ONES ^ ((11b << $position)))) + ((IN_Player + 1)'2 << $position)
+        local $CELL_0 = (CELLS)'2
+        local $CELL_1 = (CELLS >> (2 * 1))'2
+        local $CELL_2 = (CELLS >> (2 * 2))'2
+        local $CELL_3 = (CELLS >> (2 * 3))'2
+        local $CELL_4 = (CELLS >> (2 * 4))'2
+        local $CELL_5 = (CELLS >> (2 * 5))'2
+        local $CELL_6 = (CELLS >> (2 * 6))'2
+        local $CELL_7 = (CELLS >> (2 * 7))'2
+        local $CELL_8 = (CELLS >> (2 * 8))'2
+        local $hasWon = 0b
+        local $winner = 00b
+        if (($CELL_0 != 00b) & ($CELL_0 == $CELL_1) & ($CELL_1 == $CELL_2))
+            $hasWon '= 1b
+            $winner '= $CELL_0
+        else if (($CELL_3 != 00b) & ($CELL_3 == $CELL_4) & ($CELL_4 == $CELL_5))
+            $hasWon '= 1b
+            $winner '= $CELL_3
+        else if (($CELL_6 != 00b) & ($CELL_6 == $CELL_7) & ($CELL_7 == $CELL_8))
+            $hasWon '= 1b
+            $winner '= $CELL_6
+        else if (($CELL_0 != 00b) & ($CELL_0 == $CELL_3) & ($CELL_3 == $CELL_6))
+            $hasWon '= 1b
+            $winner '= $CELL_0
+        else if (($CELL_1 != 00b) & ($CELL_1 == $CELL_4) & ($CELL_4 == $CELL_7))
+            $hasWon '= 1b
+            $winner '= $CELL_1
+        else if (($CELL_2 != 00b) & ($CELL_2 == $CELL_5) & ($CELL_5 == $CELL_8))
+            $hasWon '= 1b
+            $winner '= $CELL_2
+        else if (($CELL_0 != 00b) & ($CELL_0 == $CELL_4) & ($CELL_4 == $CELL_8))
+            $hasWon '= 1b
+            $winner '= $CELL_0
+        else if (($CELL_2 != 00b) & ($CELL_2 == $CELL_4) & ($CELL_4 == $CELL_6))
+            $hasWon '= 1b
+            $winner '= $CELL_2
+        end
+        if ($hasWon)
+            OUT_CellWon '= 1b
+            IS_WON '= 1b
+            if ($winner == 1b)
+                OUT_CELLS '= (000100010001000100b)
+            else
+                OUT_CELLS '= (100010001000100010b)
+            end
+        else
+            OUT_CELLS '= CELLS
+        end
+    end
+end
+
+when !(IN_TriggerSelect)
+    OUT_SUCCESS '= 0b
+end

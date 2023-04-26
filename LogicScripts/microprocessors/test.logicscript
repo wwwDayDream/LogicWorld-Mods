@@ -1,0 +1,13 @@
+output'64 OUT1
+
+const ARGMASK  = 0xF0
+const sARGMASK = 0x0F
+const IN_INSTRUCTION = 01110001b
+
+const ALL_ONES = 1111111111111111111111111111111111111111111111111111111111111111b
+
+when *
+    local $INS_ARG_NUM'8 = (IN_INSTRUCTION & sARGMASK)
+    local $dataMasked'32 = (((0-1)'32) ^ (((0-1)'8) << (($INS_ARG_NUM * 8) % 32)))'32
+    OUT1 '= (0xFF << 56)
+end

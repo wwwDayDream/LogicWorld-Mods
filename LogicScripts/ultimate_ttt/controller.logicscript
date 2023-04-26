@@ -1,0 +1,70 @@
+// [NAME] U-TTT Controller
+input'1 IN_RESET
+input'9 IN_CELLS_ISWON
+input'1 IN_SUCCESSFULL_MOVE
+input'1 IN_IMPULSE_MOVE
+input'4 IN_MOVE_SELECTED
+
+reg'4 BIG_CELL
+reg'1 LAST_IMPULSE_MOVE
+reg'1 LAST_RESET
+reg'1 LAST_SUCCESSFULL_MOVE
+reg'1 CUR_PLAYER
+
+output'9 OUT_SELECTED
+output'9 OUT_IMPULSE_MOVE
+output'4 OUT_MOVE_SELECTED
+output'1 OUT_CUR_PLAYER
+output'1 OUT_RESET
+
+const ALL_ONES = (1111111111111111111111111111111111111111111111111111111111111111b)
+
+startup
+    BIG_CELL '= 0xF
+    OUT_SELECTED '= ALL_ONES
+end
+
+when (IN_RESET) | (LAST_RESET)
+    if (!LAST_RESET)
+        BIG_CELL '= 0xF
+        OUT_RESET '= 1b
+        OUT_SELECTED '= ALL_ONES
+    else if (!IN_RESET)
+        OUT_RESET '= 0b
+    end
+end
+
+when (IN_IMPULSE_MOVE) & !(LAST_IMPULSE_MOVE)
+    if (BIG_CELL == 0xF)
+        if (!((IN_CELLS_ISWON >> IN_MOVE_SELECTED)'1))
+            // It's not won, let's select this cell
+            BIG_CELL '= IN_MOVE_SELECTED
+            OUT_SELECTED '= 1 << IN_MOVE_SELECTED
+        end
+    else
+        OUT_MOVE_SELECTED '= IN_MOVE_SELECTED
+        OUT_CUR_PLAYER '= CUR_PLAYER
+        OUT_IMPULSE_MOVE '= 1 << BIG_CELL
+        BIG_CELL '= 0xF
+    end
+end
+when (IN_SUCCESSFULL_MOVE) & !(LAST_SUCCESSFULL_MOVE)
+    CUR_PLAYER '= !CUR_PLAYER
+    if (((IN_CELLS_ISWON >> IN_MOVE_SELECTED)'1))
+        // It's won, let's select all but this cell
+        OUT_SELECTED '= (ALL_ONES ^ (1 << IN_MOVE_SELECTED))
+    else
+        // It's not won, select just it
+        BIG_CELL '= IN_MOVE_SELECTED
+        OUT_SELECTED '= 1 << BIG_CELL
+    end
+end
+when !(IN_IMPULSE_MOVE) & (LAST_IMPULSE_MOVE)
+    OUT_IMPULSE_MOVE '= 0
+end
+
+when *
+    LAST_IMPULSE_MOVE '= IN_IMPULSE_MOVE
+    LAST_RESET '= IN_RESET
+    LAST_SUCCESSFULL_MOVE '= IN_SUCCESSFULL_MOVE
+end

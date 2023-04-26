@@ -2,6 +2,13 @@ ScriptableChip:
     column: Logic
     category: Chips
     prefab: dynamic
-    clientCode: ScriptableChip.Client.ComponentCode.ScriptableChip
-    logicCode: ScriptableChip.Server.ComponentCode.ScriptableChip
+    clientCode: SChipz.Client.ComponentCode.ScriptableChip
+    logicCode: SChipz.Server.ComponentCode.ScriptableChip
+    placingRules: dynamic
+MemoryChip:
+    column: Logic
+    category: Chips
+    prefab: dynamic
+    clientCode: SChipz.Client.ComponentCode.MemoryChip
+    logicCode: SChipz.Server.ComponentCode.MemoryChip
     placingRules: dynamic

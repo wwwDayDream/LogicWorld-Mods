@@ -1,0 +1,16 @@
+// [NAME] 8b Register
+input'8 IN_DATA
+input'1 IN_ASSIGN
+reg'8 DATA
+output'8 OUT_DATA
+
+startup
+    DATA '= 0
+end
+
+when IN_ASSIGN
+    DATA '= IN_DATA
+end
+when *
+    OUT_DATA '= DATA
+end

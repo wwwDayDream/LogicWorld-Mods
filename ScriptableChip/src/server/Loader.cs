@@ -1,6 +1,6 @@
 ﻿using LogicAPI.Server;
 
-namespace ScriptableChip.server
+namespace SChipz.server
 {
     public class ServerLoader : ServerMod
     {

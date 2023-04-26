@@ -2,9 +2,9 @@
 using JimmysUnityUtilities;
 using UnityEngine;
 
-namespace ScriptableChip.Variants
+namespace SChipz.Variants
 {
-    public class ScriptableChipVariantInfo : ResizableChipVariantInfo
+    public class ScriptableChip : ResizableChip
     {
         public override Color24 ChipColor => Color24.Black;
 

@@ -67,7 +67,7 @@ namespace Chipz.Client.ComponentCode
         protected override void DataUpdate()
         {
             // This is where we need to update the size of our main block.
-            SetBlockScale(0, new Vector3(SizeX + (Resizing ? 1 : 0), 0.5f, SizeZ + (Resizing ? 1 : 0)));
+            SetBlockScale(0, new Vector3(SizeX, 0.5f, SizeZ + (Resizing ? 1 : 0)));
             SetBlockPosition(0, new Vector3((float)SizeX / 2 - 0.5f, 0, (float)SizeZ / 2 - 0.5f));
 
             IClientWorld world = Instances.MainWorld;
